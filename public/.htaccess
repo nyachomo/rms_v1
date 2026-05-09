@@ -3,9 +3,6 @@
     SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 </IfModule>
 
-# Force Apache to pass Authorization header to PHP-CGI / PHP-FPM
-CGIPassAuth On
-
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
