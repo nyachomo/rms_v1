@@ -209,6 +209,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/scores/courses',               [AdminScoreController::class, 'courses']);
     Route::get('/admin/courses/{course}/scores',      [AdminScoreController::class, 'courseScores']);
 
+    // Direct lesson CRUD (no course/module in URL)
+    Route::put('/admin/lessons/{lesson}',                            [CourseLessonController::class, 'directUpdate']);
+    Route::delete('/admin/lessons/{lesson}',                         [CourseLessonController::class, 'directDestroy']);
+
     // Lesson exam management (admin)
     Route::get('/admin/lessons/{lesson}/exam',                       [LessonExamController::class, 'show']);
     Route::put('/admin/lessons/{lesson}/exam/settings',              [LessonExamController::class, 'updateSettings']);

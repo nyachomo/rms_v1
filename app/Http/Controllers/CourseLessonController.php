@@ -77,6 +77,29 @@ class CourseLessonController extends Controller
         return response()->json(['message' => 'Lesson order saved.']);
     }
 
+    // Direct lesson routes (lesson ID only — same pattern as exam routes)
+    public function directUpdate(Request $request, CourseLesson $lesson): JsonResponse
+    {
+        $data = $request->validate([
+            'title'            => 'required|string|max:200',
+            'content'          => 'nullable|string',
+            'video_url'        => 'nullable|url|max:500',
+            'type'             => 'required|in:text,video,mixed',
+            'duration_minutes' => 'nullable|integer|min:0',
+            'sort_order'       => 'nullable|integer|min:0',
+            'status'           => 'required|in:published,draft',
+        ]);
+
+        $lesson->update($data);
+        return response()->json(['lesson' => $lesson->fresh()]);
+    }
+
+    public function directDestroy(CourseLesson $lesson): JsonResponse
+    {
+        $lesson->delete();
+        return response()->json(['message' => 'Lesson deleted.']);
+    }
+
     // Module-direct routes (no course ID required in URL)
     public function moduleIndex(CourseModule $module): JsonResponse
     {
