@@ -69,4 +69,25 @@ class CourseModuleController extends Controller
         }
         return response()->json(['message' => 'Module order saved.']);
     }
+
+    // Module-direct routes (no course ID required in URL)
+    public function moduleUpdate(Request $request, CourseModule $module): JsonResponse
+    {
+        $data = $request->validate([
+            'title'       => 'required|string|max:200',
+            'description' => 'nullable|string|max:500',
+            'status'      => 'required|in:active,draft',
+        ]);
+
+        $module->update($data);
+        $module->loadCount('lessons');
+
+        return response()->json(['module' => $module->fresh()]);
+    }
+
+    public function moduleDestroy(CourseModule $module): JsonResponse
+    {
+        $module->delete();
+        return response()->json(['message' => 'Module deleted.']);
+    }
 }

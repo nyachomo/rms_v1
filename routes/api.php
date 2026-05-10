@@ -177,6 +177,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/courses/{course}/modules/{module}',                     [CourseModuleController::class, 'update']);
     Route::delete('/admin/courses/{course}/modules/{module}',                  [CourseModuleController::class, 'destroy']);
 
+    // Simple module-direct routes (no course in URL)
+    Route::put('/admin/modules/{module}',                                      [CourseModuleController::class, 'moduleUpdate']);
+    Route::delete('/admin/modules/{module}',                                   [CourseModuleController::class, 'moduleDestroy']);
+
     // Course lessons nested under modules (admin)
     Route::get('/admin/courses/{course}/modules/{module}/lessons',             [CourseLessonController::class, 'index']);
     Route::post('/admin/courses/{course}/modules/{module}/lessons',            [CourseLessonController::class, 'store']);
