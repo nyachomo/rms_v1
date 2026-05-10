@@ -89,7 +89,7 @@ function LessonModal({ mode, lesson, courseId, module, token, onSaved, onClose }
 
     const submit = async e => {
         e.preventDefault(); setSaving(true); setErrors({});
-        const base = `/api/admin/courses/${courseId}/modules/${module.id}/lessons`;
+        const base = `/api/admin/modules/${module.id}/lessons`;
         const url  = mode === 'edit' ? `${base}/${lesson.id}` : base;
         const meth = mode === 'edit' ? 'PUT' : 'POST';
         try {
@@ -589,7 +589,7 @@ export default function AdminCourseLessons() {
         const { kind, item, moduleId } = delTarget;
         let url;
         if (kind === 'module') url = `/api/admin/courses/${courseId}/modules/${item.id}`;
-        else url = `/api/admin/courses/${courseId}/modules/${moduleId}/lessons/${item.id}`;
+        else url = `/api/admin/modules/${moduleId}/lessons/${item.id}`;
         await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
         if (kind === 'module') setModules(prev => prev.filter(m => m.id !== item.id));
         else setModules(prev => prev.map(m => m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== item.id) } : m));

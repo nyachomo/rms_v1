@@ -76,4 +76,66 @@ class CourseLessonController extends Controller
         }
         return response()->json(['message' => 'Lesson order saved.']);
     }
+
+    // Module-direct routes (no course ID required in URL)
+    public function moduleIndex(CourseModule $module): JsonResponse
+    {
+        $lessons = $module->lessons()->withCount('progress')->orderBy('sort_order')->get();
+        return response()->json($lessons);
+    }
+
+    public function moduleStore(Request $request, CourseModule $module): JsonResponse
+    {
+        $data = $request->validate([
+            'title'            => 'required|string|max:200',
+            'content'          => 'nullable|string',
+            'video_url'        => 'nullable|url|max:500',
+            'type'             => 'required|in:text,video,mixed',
+            'duration_minutes' => 'nullable|integer|min:0',
+            'sort_order'       => 'nullable|integer|min:0',
+            'status'           => 'required|in:published,draft',
+        ]);
+
+        $data['course_id']  = $module->course_id;
+        $data['module_id']  = $module->id;
+        $data['sort_order'] ??= ($module->lessons()->max('sort_order') ?? 0) + 1;
+
+        $lesson = CourseLesson::create($data);
+        return response()->json(['lesson' => $lesson], 201);
+    }
+
+    public function moduleUpdate(Request $request, CourseModule $module, CourseLesson $lesson): JsonResponse
+    {
+        abort_if($lesson->module_id !== $module->id, 404);
+
+        $data = $request->validate([
+            'title'            => 'required|string|max:200',
+            'content'          => 'nullable|string',
+            'video_url'        => 'nullable|url|max:500',
+            'type'             => 'required|in:text,video,mixed',
+            'duration_minutes' => 'nullable|integer|min:0',
+            'sort_order'       => 'nullable|integer|min:0',
+            'status'           => 'required|in:published,draft',
+        ]);
+
+        $lesson->update($data);
+        return response()->json(['lesson' => $lesson->fresh()]);
+    }
+
+    public function moduleDestroy(CourseModule $module, CourseLesson $lesson): JsonResponse
+    {
+        abort_if($lesson->module_id !== $module->id, 404);
+        $lesson->delete();
+        return response()->json(['message' => 'Lesson deleted.']);
+    }
+
+    public function moduleReorder(Request $request, CourseModule $module): JsonResponse
+    {
+        $request->validate(['order' => 'required|array', 'order.*' => 'integer']);
+        foreach ($request->order as $position => $lessonId) {
+            CourseLesson::where('id', $lessonId)->where('module_id', $module->id)
+                ->update(['sort_order' => $position + 1]);
+        }
+        return response()->json(['message' => 'Lesson order saved.']);
+    }
 }

@@ -184,6 +184,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/courses/{course}/modules/{module}/lessons/{lesson}',    [CourseLessonController::class, 'update']);
     Route::delete('/admin/courses/{course}/modules/{module}/lessons/{lesson}', [CourseLessonController::class, 'destroy']);
 
+    // Simpler module-direct lesson routes (no course in URL)
+    Route::get('/admin/modules/{module}/lessons',             [CourseLessonController::class, 'moduleIndex']);
+    Route::post('/admin/modules/{module}/lessons',            [CourseLessonController::class, 'moduleStore']);
+    Route::post('/admin/modules/{module}/lessons/reorder',    [CourseLessonController::class, 'moduleReorder']);
+    Route::put('/admin/modules/{module}/lessons/{lesson}',    [CourseLessonController::class, 'moduleUpdate']);
+    Route::delete('/admin/modules/{module}/lessons/{lesson}', [CourseLessonController::class, 'moduleDestroy']);
+
     // Learning portal (student)
     Route::get('/learning/my-enrollments',                           [LearningController::class, 'myEnrollments']);
     Route::get('/learning/my-courses',                               [LearningController::class, 'myCourses']);
