@@ -37,19 +37,20 @@ function ModuleModal({ mode, module, courseId, token, onSaved, onClose }) {
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 520, borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="modal-box" style={{ maxWidth: 720, width: '95vw', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '92vh' }}>
+                <div style={{ background: '#fff', borderBottom: '1.5px solid #e5e7eb', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(124,58,237,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a78bfa', fontSize: '.95rem' }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(124,58,237,.1)', border: '2px solid rgba(124,58,237,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed', fontSize: '.95rem' }}>
                             <i className="fas fa-layer-group"></i>
                         </div>
-                        <h3 style={{ margin: 0, color: '#fff', fontFamily: 'Poppins,sans-serif', fontSize: '.97rem', fontWeight: 700 }}>
+                        <h3 style={{ margin: 0, color: '#111827', fontFamily: 'Poppins,sans-serif', fontSize: '.97rem', fontWeight: 700 }}>
                             {mode === 'edit' ? 'Edit Module' : 'New Module'}
                         </h3>
                     </div>
-                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,.12)', border: 'none', color: '#fff', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: '.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-times"></i></button>
+                    <button onClick={onClose} style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#6b7280', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: '.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-times"></i></button>
                 </div>
-                <form onSubmit={submit} style={{ padding: '22px 24px' }}>
+                <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                    <div style={{ padding: '22px 24px', overflowY: 'auto', flex: 1 }}>
                     <div style={{ marginBottom: 14 }}>
                         <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Module Title *</label>
                         <input name="title" value={form.title} onChange={handle} required placeholder="e.g. HTML Fundamentals" style={inp} />
@@ -57,16 +58,22 @@ function ModuleModal({ mode, module, courseId, token, onSaved, onClose }) {
                     </div>
                     <div style={{ marginBottom: 14 }}>
                         <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Description</label>
-                        <textarea name="description" value={form.description} onChange={handle} rows={2} placeholder="Short description" style={{ ...inp, resize: 'vertical' }} />
+                        <RichTextEditor
+                            value={form.description}
+                            onChange={val => setForm(f => ({ ...f, description: val }))}
+                            placeholder="Short description…"
+                            minHeight={160}
+                        />
                     </div>
-                    <div style={{ marginBottom: 20 }}>
+                    <div style={{ marginBottom: 8 }}>
                         <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 5 }}>Status</label>
                         <select name="status" value={form.status} onChange={handle} style={inp}>
                             <option value="active">Active</option>
                             <option value="draft">Draft</option>
                         </select>
                     </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    </div>
+                    <div style={{ padding: '14px 24px', borderTop: '1.5px solid #e5e7eb', background: '#f9fafb', display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0 }}>
                         <button type="button" onClick={onClose} style={{ padding: '9px 18px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 600, fontSize: '.86rem' }}>Cancel</button>
                         <button type="submit" disabled={saving} style={{ padding: '9px 22px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? .7 : 1, fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.86rem', display: 'flex', alignItems: 'center', gap: 7 }}>
                             {saving ? <><i className="fas fa-spinner fa-spin"></i> Saving…</> : <><i className="fas fa-save"></i> {mode === 'edit' ? 'Save' : 'Create Module'}</>}
@@ -105,18 +112,18 @@ function LessonModal({ mode, lesson, courseId, module, token, onSaved, onClose }
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 680, borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
-                <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div className="modal-box" style={{ maxWidth: 1100, width: '95vw', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
+                <div style={{ background: '#fff', borderBottom: '1.5px solid #e5e7eb', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${tColor}33`, border: `2px solid ${tColor}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tColor, fontSize: '.9rem', flexShrink: 0 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${tColor}18`, border: `2px solid ${tColor}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tColor, fontSize: '.9rem', flexShrink: 0 }}>
                             <i className={TYPE_ICON[form.type] ?? 'fas fa-book'}></i>
                         </div>
                         <div>
-                            <p style={{ margin: 0, fontSize: '.68rem', color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.1em' }}>{mode === 'edit' ? 'Edit Lesson' : 'New Lesson'} — {module.title}</p>
-                            <h3 style={{ margin: 0, color: '#fff', fontFamily: 'Poppins,sans-serif', fontSize: '.95rem', fontWeight: 700 }}>{mode === 'edit' ? lesson.title : 'Add Lesson'}</h3>
+                            <p style={{ margin: 0, fontSize: '.68rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.1em' }}>{mode === 'edit' ? 'Edit Lesson' : 'New Lesson'} — {module.title}</p>
+                            <h3 style={{ margin: 0, color: '#111827', fontFamily: 'Poppins,sans-serif', fontSize: '.95rem', fontWeight: 700 }}>{mode === 'edit' ? lesson.title : 'Add Lesson'}</h3>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,.12)', border: 'none', color: '#fff', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: '.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-times"></i></button>
+                    <button onClick={onClose} style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#6b7280', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: '.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-times"></i></button>
                 </div>
                 <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                     <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
@@ -251,7 +258,7 @@ function ExamModal({ lesson, token, onClose }) {
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
-            <div className="modal-box" style={{ maxWidth: 760, borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
+            <div className="modal-box" style={{ maxWidth: 1100, width: '95vw', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
 
                 {/* Header */}
                 <div style={{ background: 'linear-gradient(135deg,#0f766e,#0d9488)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -623,33 +630,33 @@ export default function AdminCourseLessons() {
                 <div className="db-content">
 
                     {/* Header banner */}
-                    <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b 60%,#1e1b4b)', borderRadius: 18, padding: '24px 28px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', top: -30, right: 40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(124,58,237,.12)', pointerEvents: 'none' }}></div>
+                    <div style={{ background: '#fff', borderRadius: 18, padding: '24px 28px', marginBottom: 24, position: 'relative', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,.07)', border: '1px solid #e5e7eb' }}>
+                        <div style={{ position: 'absolute', top: -30, right: 40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(124,58,237,.05)', pointerEvents: 'none' }}></div>
                         <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                <Link to="/dashboard/courses" style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.7)', textDecoration: 'none', flexShrink: 0 }}>
+                                <Link to="/dashboard/courses" style={{ width: 36, height: 36, borderRadius: 9, background: '#f3f4f6', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', textDecoration: 'none', flexShrink: 0 }}>
                                     <i className="fas fa-arrow-left"></i>
                                 </Link>
                                 <div style={{ width: 48, height: 48, borderRadius: 13, background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#fff', flexShrink: 0 }}>
                                     <i className="fas fa-layer-group"></i>
                                 </div>
                                 <div>
-                                    <p style={{ margin: 0, fontSize: '.7rem', color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Module & Lesson Manager</p>
-                                    <h1 style={{ margin: 0, color: '#fff', fontFamily: 'Poppins,sans-serif', fontSize: '1.15rem', fontWeight: 800 }}>{course?.title ?? 'Loading…'}</h1>
+                                    <p style={{ margin: 0, fontSize: '.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.1em' }}>Module & Lesson Manager</p>
+                                    <h1 style={{ margin: 0, color: '#111827', fontFamily: 'Poppins,sans-serif', fontSize: '1.15rem', fontWeight: 800 }}>{course?.title ?? 'Loading…'}</h1>
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexWrap: 'wrap' }}>
                                 {[
-                                    { icon: 'fa-layer-group',    val: modules.length,  label: 'Modules',   bg: 'rgba(124,58,237,.2)',  col: '#c4b5fd' },
-                                    { icon: 'fa-book',           val: totalLessons,    label: 'Lessons',   bg: 'rgba(255,255,255,.1)', col: '#fff' },
-                                    { icon: 'fa-check-circle',   val: totalPublished,  label: 'Published', bg: 'rgba(16,185,129,.2)',  col: '#6ee7b7' },
-                                    { icon: 'fa-clipboard-list', val: totalExams,      label: 'With Exam', bg: 'rgba(20,184,166,.2)',  col: '#5eead4' },
-                                    { icon: 'fa-clock',          val: `${totalMins}m`, label: 'Duration',  bg: 'rgba(254,115,12,.18)', col: '#fdba74' },
+                                    { icon: 'fa-layer-group',    val: modules.length,  label: 'Modules',   bg: 'rgba(124,58,237,.1)',  col: '#7c3aed' },
+                                    { icon: 'fa-book',           val: totalLessons,    label: 'Lessons',   bg: '#f3f4f6',             col: '#374151' },
+                                    { icon: 'fa-check-circle',   val: totalPublished,  label: 'Published', bg: 'rgba(16,185,129,.1)', col: '#059669' },
+                                    { icon: 'fa-clipboard-list', val: totalExams,      label: 'With Exam', bg: 'rgba(20,184,166,.1)', col: '#0d9488' },
+                                    { icon: 'fa-clock',          val: `${totalMins}m`, label: 'Duration',  bg: 'rgba(254,115,12,.1)', col: '#ea6c00' },
                                 ].map(s => (
                                     <div key={s.label} style={{ background: s.bg, borderRadius: 50, padding: '5px 13px', display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <i className={`fas ${s.icon}`} style={{ color: s.col, fontSize: '.72rem' }}></i>
                                         <span style={{ color: s.col, fontWeight: 700, fontSize: '.8rem' }}>{s.val}</span>
-                                        <span style={{ color: `${s.col}88`, fontSize: '.72rem' }}>{s.label}</span>
+                                        <span style={{ color: `${s.col}99`, fontSize: '.72rem' }}>{s.label}</span>
                                     </div>
                                 ))}
                                 <button onClick={() => setModal({ type: 'addModule' })}
