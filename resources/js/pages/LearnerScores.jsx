@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DashboardSidebar from '../components/DashboardSidebar';
-import DashboardNavbar  from '../components/DashboardNavbar';
 import AccessDenied from '../components/AccessDenied';
 
 function scoreColor(score, passMark) {
@@ -162,7 +160,107 @@ function ModuleSection({ mod, courseSlug }) {
     );
 }
 
-function CourseSection({ course }) {
+function generateCertificate(studentName, courseTitle, avgScore) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const certNo  = `TTI/${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Certificate – ${courseTitle}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Dancing+Script:wght@700&family=Poppins:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  @page{size:A4 landscape;margin:0}
+  body{width:297mm;height:210mm;background:#fff;display:flex;align-items:center;justify-content:center;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .page{width:283mm;height:200mm;border:6px double #0a5276;border-radius:6px;position:relative;padding:16px 56px 20px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;background:#fff;overflow:hidden}
+  .corner{position:absolute;width:72px;height:72px}
+  .tl{top:10px;left:10px;border-top:5px solid #fe730c;border-left:5px solid #fe730c}
+  .tr{top:10px;right:10px;border-top:5px solid #fe730c;border-right:5px solid #fe730c}
+  .bl{bottom:10px;left:10px;border-bottom:5px solid #fe730c;border-left:5px solid #fe730c}
+  .br{bottom:10px;right:10px;border-bottom:5px solid #fe730c;border-right:5px solid #fe730c}
+  .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.04;font-family:'Cinzel',serif;font-size:110px;font-weight:900;color:#0a5276;transform:rotate(-30deg);pointer-events:none;white-space:nowrap}
+  .cert-no{position:absolute;top:18px;right:84px;font-family:'Poppins',sans-serif;font-size:12px;color:#6b7280;letter-spacing:.06em}
+  .header{display:flex;align-items:center;gap:20px;width:100%}
+  .logo{width:110px;height:110px;object-fit:contain;flex-shrink:0}
+  .org{font-family:'Cinzel',serif;font-size:46px;font-weight:900;color:#0a5276;letter-spacing:.04em}
+  .sub{font-family:'Cinzel',serif;font-size:22px;color:#607d8b;letter-spacing:.22em;margin-top:6px}
+  .qr{position:absolute;bottom:22px;right:30px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .qr img{width:90px;height:90px;border:1px solid #e2e8f0;border-radius:4px}
+  .qr-lbl{font-family:'Poppins',sans-serif;font-size:8px;color:#9ca3af;letter-spacing:.06em;text-transform:uppercase}
+  .body{display:flex;flex-direction:column;align-items:center;gap:0;flex:1;justify-content:center;width:100%;text-align:center}
+  .div{width:82%;height:2.5px;background:linear-gradient(90deg,transparent,#fe730c,transparent)}
+  .certify{font-family:'Poppins',sans-serif;font-size:15px;color:#374151;font-style:italic;margin:10px 0 6px}
+  .name{font-family:'Dancing Script',cursive;font-size:64px;color:#0e6b7c;line-height:1.1}
+  .name-line{width:60%;height:2px;background:#0e6b7c;margin:4px auto 10px}
+  .award{font-family:'Poppins',sans-serif;font-size:14px;color:#374151;margin-bottom:8px}
+  .course{font-family:'Cinzel',serif;font-size:22px;font-weight:900;color:#0e6b7c;letter-spacing:.08em;text-transform:uppercase}
+  .cdiv{width:36%;height:1.5px;background:#0e6b7c;margin:6px auto 10px}
+  .awn{font-family:'Poppins',sans-serif;font-size:14px;color:#374151;margin-bottom:3px}
+  .date{font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#0a5276;border-bottom:1.5px solid #0a5276;padding-bottom:3px}
+  .sigs{display:flex;justify-content:space-around;width:82%;padding-top:6px}
+  .sig{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .sig-name{font-family:'Dancing Script',cursive;font-size:30px;color:#374151}
+  .sig-line{width:160px;height:1.5px;background:#374151}
+  .sig-lbl{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:#374151;letter-spacing:.12em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div class="wm">TECHSPHERE</div>
+  <div class="cert-no">CERT. NO. ${certNo}</div>
+
+  <div class="header">
+    <img class="logo" src="/logo/Logo.jpeg" alt="Techsphere Logo" />
+    <div>
+      <div class="org">TECHSPHERE INSTITUTE</div>
+      <div class="sub">Certificate of Merit</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="div"></div>
+    <p class="certify">This is to certify that;</p>
+    <div class="name">${studentName}</div>
+    <div class="name-line"></div>
+    <p class="award">has satisfactorily fulfilled the requirements for the award of the Certificate in</p>
+    <div class="course">${courseTitle}</div>
+    <div class="cdiv"></div>
+    <p class="awn">Awarded on this</p>
+    <p class="date">${dateStr}</p>
+    <div class="div" style="margin-top:10px"></div>
+  </div>
+
+  <div class="sigs">
+    <div class="sig">
+      <div class="sig-name">Director</div>
+      <div class="sig-line"></div>
+      <div class="sig-lbl">Director</div>
+    </div>
+    <div class="sig">
+      <div class="sig-name">Principal</div>
+      <div class="sig-line"></div>
+      <div class="sig-lbl">Principal</div>
+    </div>
+  </div>
+
+  <div class="qr">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(certNo + ' | ' + studentName + ' | ' + courseTitle)}" alt="QR Code" />
+    <span class="qr-lbl">Verify Certificate</span>
+  </div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},400);}</script>
+</body>
+</html>`;
+    const win = window.open('', '_blank', 'width=1000,height=750');
+    if (win) { win.document.write(html); win.document.close(); }
+}
+
+function CourseSection({ course, studentName }) {
     const [open, setOpen] = useState(true);
 
     const avgColor = course.avg_score === null ? '#9ca3af'
@@ -198,10 +296,28 @@ function CourseSection({ course }) {
                             {course.avg_score !== null ? `${course.avg_score}%` : '—'}
                         </div>
                     </div>
-                    <button onClick={() => setOpen(o => !o)}
-                        style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem' }}>
-                        <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {course.avg_score !== null && course.avg_score >= 50 ? (
+                            <button onClick={() => generateCertificate(studentName, course.course_title, course.avg_score)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#081f4e,#1a3a6e)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(8,31,78,.25)', transition: 'opacity .2s' }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
+                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                title="Download Certificate">
+                                <i className="fas fa-certificate" style={{ color: '#fe730c', fontSize: '.75rem' }}></i>
+                                Certificate
+                            </button>
+                        ) : (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#9ca3af', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600, cursor: 'not-allowed' }}
+                                title="Score must be 50% or above to download certificate">
+                                <i className="fas fa-lock" style={{ fontSize: '.7rem' }}></i>
+                                Certificate
+                            </span>
+                        )}
+                        <button onClick={() => setOpen(o => !o)}
+                            style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem' }}>
+                            <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -218,18 +334,10 @@ function CourseSection({ course }) {
 }
 
 export default function LearnerScores() {
-    const { token, can } = useAuth();
+    const { token, can, user } = useAuth();
 
     if (!can('learning', 'view_scores')) {
-        return (
-            <div className="db-wrap">
-                <DashboardSidebar />
-                <div className="db-main">
-                    <DashboardNavbar page="My Scores" />
-                    <div className="db-content"><AccessDenied /></div>
-                </div>
-            </div>
-        );
+        return <div className="db-content"><AccessDenied /></div>;
     }
     const [data,    setData]    = useState([]);
     const [loading, setLoading] = useState(true);
@@ -256,11 +364,7 @@ export default function LearnerScores() {
         : null;
 
     return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main">
-                <DashboardNavbar page="My Scores" />
-                <div className="db-content" style={{ overflowY: 'auto' }}>
+        <div className="db-content" style={{ overflowY: 'auto' }}>
                 <div>
 
                     {/* Page header with inline summary chips */}
@@ -279,7 +383,7 @@ export default function LearnerScores() {
                                 <div>
                                     <p style={{ margin:'0 0 3px', color:'#94a3b8', fontSize:'.75rem', textTransform:'uppercase', letterSpacing:'.1em', fontWeight:600 }}>Assessment Results</p>
                                     <h1 style={{ margin:0, color:'#081f4e', fontSize:'1.4rem', fontWeight:800 }}>My Scores</h1>
-                                    <p style={{ margin:'4px 0 0', color:'#64748b', fontSize:'.83rem' }}>Best score per exam, module averages and course averages</p>
+
                                 </div>
                             </div>
 
@@ -332,12 +436,10 @@ export default function LearnerScores() {
 
                     {/* Course sections */}
                     {!loading && !error && data.map(course => (
-                        <CourseSection key={course.course_id} course={course} />
+                        <CourseSection key={course.course_id} course={course} studentName={user?.name || 'Student'} />
                     ))}
 
                 </div>
                 </div>
-            </div>
-        </div>
     );
 }

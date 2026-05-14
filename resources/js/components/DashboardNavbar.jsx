@@ -84,14 +84,20 @@ export default function DashboardNavbar({ page }) {
                                 <strong>{user.name}</strong>
                                 <small>{user?.role?.name ?? 'Super Admin'}</small>
                             </div>
-                            <div className="db-navbar-avatar">{initials}</div>
+                            {user.user_image
+                                ? <img src={user.user_image} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                                : <div className="db-navbar-avatar">{initials}</div>
+                            }
                             <i className={`fas fa-chevron-down db-navbar-chevron${open ? ' rotated' : ''}`}></i>
                         </button>
 
                         {open && (
                             <div className="db-navbar-dropdown">
                                 <div className="db-navbar-dropdown-header">
-                                    <div className="db-navbar-avatar" style={{ width: 40, height: 40, fontSize: '1rem' }}>{initials}</div>
+                                    {user.user_image
+                                        ? <img src={user.user_image} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        : <div className="db-navbar-avatar" style={{ width: 40, height: 40, fontSize: '1rem' }}>{initials}</div>
+                                    }
                                     <div>
                                         <div style={{ fontWeight: 700, fontSize: '.85rem', color: '#081f4e' }}>{user.name}</div>
                                         <div style={{ fontSize: '.72rem', color: '#94a3b8' }}>{user.email}</div>

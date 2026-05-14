@@ -88,8 +88,8 @@ function CourseModal({ course, onSave, onClose, token, categories = [] }) {
     const Sel = ({ label, field, children, span = 1 }) => (
         <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
-            <div className="profile-input-wrap">
-                <select value={form[field]} onChange={e => set(field, e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Poppins, sans-serif', fontSize: '.88rem', color: '#081f4e' }}>{children}</select>
+            <div className="profile-input-wrap" style={{ border: '1.5px solid #d1d5db', borderRadius: 8, padding: '0 10px', background: '#fff' }}>
+                <select value={form[field]} onChange={e => set(field, e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Poppins, sans-serif', fontSize: '.88rem', color: '#081f4e', padding: '8px 0', cursor: 'pointer' }}>{children}</select>
             </div>
         </div>
     );
@@ -103,18 +103,18 @@ function CourseModal({ course, onSave, onClose, token, categories = [] }) {
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 740, maxHeight: '90vh', overflowY: 'auto' }}>
-                <div className="modal-header" style={{ background: 'linear-gradient(135deg,#081f4e,#1e3a8a)', borderRadius: '14px 14px 0 0', padding: '20px 24px' }}>
+            <div className="modal-box" style={{ maxWidth: 1100, width: '95vw', maxHeight: '92vh', overflowY: 'auto' }}>
+                <div className="modal-header" style={{ background: '#fff', borderRadius: '14px 14px 0 0', padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <i className="fas fa-book-open" style={{ color: '#fff', fontSize: '.9rem' }}></i>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className="fas fa-book-open" style={{ color: '#1e3a8a', fontSize: '.9rem' }}></i>
                         </div>
                         <div>
-                            <h3 style={{ color: '#fff', margin: 0, fontSize: '1rem', fontFamily: 'Poppins, sans-serif' }}>{isEdit ? 'Edit Course' : 'Add New Course'}</h3>
-                            <p style={{ color: 'rgba(255,255,255,.55)', fontSize: '.75rem', margin: 0, fontFamily: 'Poppins, sans-serif' }}>Fill in the course details below</p>
+                            <h3 style={{ color: '#081f4e', margin: 0, fontSize: '1rem', fontFamily: 'Poppins, sans-serif' }}>{isEdit ? 'Edit Course' : 'Add New Course'}</h3>
+                            <p style={{ color: '#64748b', fontSize: '.75rem', margin: 0, fontFamily: 'Poppins, sans-serif' }}>Fill in the course details below</p>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,.25)', background: 'rgba(255,255,255,.12)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.85rem', flexShrink: 0, transition: 'all .18s' }} onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,.25)'; e.currentTarget.style.borderColor='rgba(255,255,255,.5)'; }} onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,.12)'; e.currentTarget.style.borderColor='rgba(255,255,255,.25)'; }}>
+                    <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid #e5e7eb', background: '#f8fafc', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.85rem', flexShrink: 0, transition: 'all .18s' }} onMouseEnter={e => { e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#ef4444'; }} onMouseLeave={e => { e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.color='#64748b'; }}>
                         <i className="fas fa-times"></i>
                     </button>
                 </div>

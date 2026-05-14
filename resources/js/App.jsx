@@ -72,6 +72,7 @@ import CourseLearner from './pages/CourseLearner';
 import LearnerProfile from './pages/LearnerProfile';
 import LearnerScores  from './pages/LearnerScores';
 import CodePractice from './pages/CodePractice';
+import LearningLayout from './components/LearningLayout';
 import Dashboard from './pages/Dashboard';
 import AdminScores from './pages/AdminScores';
 import TechsphereClasses from './pages/TechsphereClasses';
@@ -118,8 +119,8 @@ function DashboardIndex() {
     const hasAdminPerm = DASHBOARD_PAGES.some(({ perm }) => perm[0] !== 'learning' && can(perm[0], perm[1]));
     if (hasAdminPerm) return <Dashboard />;
 
-    // Learning-only users → their portal
-    return <Navigate to="/dashboard/learning" replace />;
+    // Learning-only users → profile page first
+    return <Navigate to="/dashboard/learning/profile" replace />;
 }
 
 function App() {
@@ -155,12 +156,14 @@ function App() {
                         <Route path="users"          element={<Users />} />
                         <Route path="settings"       element={<Settings />} />
                         <Route path="student-scores"             element={<AdminScores />} />
-                        <Route path="learning"                    element={<Learning />} />
-                        <Route path="learning/browse"             element={<BrowsePrograms />} />
-                        <Route path="learning/scores"             element={<LearnerScores />} />
-                        <Route path="learning/code-practice"      element={<CodePractice />} />
-                        <Route path="learning/profile"            element={<LearnerProfile />} />
-                        <Route path="learning/:courseSlug"        element={<CourseLearner />} />
+                        <Route path="learning" element={<LearningLayout />}>
+                            <Route index                      element={<Learning />} />
+                            <Route path="browse"             element={<BrowsePrograms />} />
+                            <Route path="scores"             element={<LearnerScores />} />
+                            <Route path="code-practice"      element={<CodePractice />} />
+                            <Route path="profile"            element={<LearnerProfile />} />
+                            <Route path=":courseSlug"        element={<CourseLearner />} />
+                        </Route>
                     </Route>
 
                     {/* Legacy /learn routes → redirect to dashboard */}

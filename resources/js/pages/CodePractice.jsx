@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DashboardSidebar from '../components/DashboardSidebar';
-import DashboardNavbar from '../components/DashboardNavbar';
 import AccessDenied from '../components/AccessDenied';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
@@ -166,22 +164,11 @@ export default function CodePractice() {
     );
 
     if (!can('learning', 'view')) {
-        return (
-            <div className="db-wrap">
-                <DashboardSidebar />
-                <div className="db-main">
-                    <DashboardNavbar page="Code Playground" />
-                    <div className="db-content"><AccessDenied /></div>
-                </div>
-            </div>
-        );
+        return <div className="db-content"><AccessDenied /></div>;
     }
 
     return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main" style={{ height: '100vh', overflow: 'hidden', background: '#0d1117', minWidth: 0 }}>
-                <DashboardNavbar page="Code Playground" />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#0d1117', minWidth: 0 }}>
 
                 {/* ── Toolbar ── */}
                 <div style={{
@@ -338,7 +325,6 @@ export default function CodePractice() {
                         />
                     </div>
                 </div>
-            </div>
 
             {/* Toast */}
             {toast && (

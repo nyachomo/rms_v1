@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DashboardSidebar from '../components/DashboardSidebar';
-import DashboardNavbar from '../components/DashboardNavbar';
 
 /* ─── helpers ─── */
 const STATUS = {
@@ -53,6 +51,7 @@ export default function BrowsePrograms() {
     const [loading, setLoading]         = useState(true);
     const [search, setSearch]           = useState('');
     const [catFilter, setCatFilter]     = useState('all');
+    const [enrollFilter, setEnrollFilter] = useState('all'); // 'all' | 'enrolled' | 'not-enrolled'
 
     const [enrollModal, setEnrollModal]       = useState(null);
     const [intakes, setIntakes]               = useState([]);
@@ -103,11 +102,13 @@ export default function BrowsePrograms() {
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
         return courses.filter(c => {
-            const matchQ   = !q || c.title?.toLowerCase().includes(q) || c.subtitle?.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q);
-            const matchCat = catFilter === 'all' || c.category === catFilter;
-            return matchQ && matchCat;
+            const matchQ      = !q || c.title?.toLowerCase().includes(q) || c.subtitle?.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q);
+            const matchCat    = catFilter === 'all' || c.category === catFilter;
+            const isEnrolled  = !!enrollmentMap[c.id];
+            const matchEnroll = enrollFilter === 'all' || (enrollFilter === 'enrolled' ? isEnrolled : !isEnrolled);
+            return matchQ && matchCat && matchEnroll;
         });
-    }, [courses, search, catFilter]);
+    }, [courses, search, catFilter, enrollFilter, enrollmentMap]);
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
@@ -147,11 +148,7 @@ export default function BrowsePrograms() {
     };
 
     return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main">
-                <DashboardNavbar page="Browse Programs" />
-                <div className="db-content" style={{ padding: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div className="db-content" style={{ padding: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', flex: 1 }}>
 
                     {/* Toast */}
                     {toast && (
@@ -161,63 +158,41 @@ export default function BrowsePrograms() {
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-
-                        {/* ── LEFT CATEGORY SIDEBAR ── */}
-                        <aside className="browse-cat-sidebar" style={{ width: 265, flexShrink: 0, background: '#fff', display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRight: '1px solid #e8ecf4' }}>
-                            <div style={{ padding: '28px 22px 18px', borderBottom: '1px solid rgba(0,0,0,.06)' }}>
-                                <p style={{ margin: '0 0 4px', fontSize: '.68rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 700, fontFamily: 'Poppins,sans-serif' }}>Browse By</p>
-                                <h2 style={{ margin: 0, fontSize: '.95rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif', lineHeight: 1.3 }}>Courses / Program<br/>Categories</h2>
-                            </div>
-
-                            <div style={{ padding: '0 10px 24px' }}>
-                                {/* All Courses */}
-                                <button
-                                    onClick={() => setCatFilter('all')}
-                                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 12, border: 'none', outline: 'none', boxShadow: 'none', WebkitAppearance: 'none', appearance: 'none', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', background: catFilter === 'all' ? 'rgba(254,115,12,.1)' : 'none', borderLeft: catFilter === 'all' ? '3px solid #fe730c' : '3px solid transparent', marginBottom: 4, transition: 'all .15s' }}
-                                >
-                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: catFilter === 'all' ? 'rgba(254,115,12,.2)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <i className="fas fa-th-large" style={{ color: catFilter === 'all' ? '#fe730c' : '#64748b', fontSize: '.8rem' }}></i>
-                                    </div>
-                                    <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-                                        <div style={{ fontSize: '.83rem', fontWeight: 700, color: catFilter === 'all' ? '#fe730c' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>All Courses</div>
-                                        <div style={{ fontSize: '.68rem', color: '#94a3b8', marginTop: 1 }}>All programs available</div>
-                                    </div>
-                                    <span style={{ flexShrink: 0, background: '#fe730c', color: '#fff', fontSize: '.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 20, minWidth: 24, textAlign: 'center' }}>{courses.length}</span>
-                                </button>
-
-                                {/* Per-category */}
-                                {categories.map((cat, idx) => {
-                                    const slug    = cat.slug || cat.name;
-                                    const active  = catFilter === slug;
-                                    const count   = catCounts[slug] ?? 0;
-                                    const icon    = CAT_ICONS[(idx + 1) % CAT_ICONS.length];
-                                    return (
-                                        <button
-                                            key={cat.id ?? slug}
-                                            onClick={() => setCatFilter(slug)}
-                                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 12, border: 'none', outline: 'none', boxShadow: 'none', WebkitAppearance: 'none', appearance: 'none', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', background: active ? 'rgba(254,115,12,.1)' : 'none', borderLeft: `3px solid ${active ? '#fe730c' : 'transparent'}`, marginBottom: 4, transition: 'all .15s' }}
-                                        >
-                                            <div style={{ width: 36, height: 36, borderRadius: 10, background: active ? 'rgba(254,115,12,.2)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <i className={icon} style={{ color: active ? '#fe730c' : '#64748b', fontSize: '.85rem' }}></i>
-                                            </div>
-                                            <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-                                                <div style={{ fontSize: '.83rem', fontWeight: 700, color: active ? '#fe730c' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</div>
-                                                {cat.description && <div style={{ fontSize: '.68rem', color: '#94a3b8', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.description}</div>}
-                                            </div>
-                                            <span style={{ flexShrink: 0, background: active ? '#fe730c' : '#e8ecf4', color: active ? '#fff' : '#64748b', fontSize: '.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 20, minWidth: 24, textAlign: 'center' }}>{count}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </aside>
+                    <div style={{ display: 'flex', flex: 1, minHeight: 0, flexDirection: 'column' }}>
 
                         {/* ── MAIN CONTENT ── */}
                         <div style={{ flex: 1, minWidth: 0, padding: '28px 28px 48px', overflowY: 'auto' }}>
 
-                            {/* Search bar */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                                <div style={{ flex: 1, position: 'relative' }}>
+                            {/* ── HORIZONTAL CATEGORY TABS ── */}
+                            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 18, scrollbarWidth: 'none' }}>
+                                {/* All tab */}
+                                <button
+                                    onClick={() => setCatFilter('all')}
+                                    style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 50, border: `1.5px solid ${catFilter === 'all' ? '#081f4e' : '#e2e8f0'}`, background: catFilter === 'all' ? '#081f4e' : '#fff', color: catFilter === 'all' ? '#fff' : '#475569', fontFamily: 'Poppins,sans-serif', fontSize: '.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}
+                                >
+                                    <i className="fas fa-th-large" style={{ fontSize: '.72rem' }}></i> All
+                                </button>
+
+                                {/* Per-category */}
+                                {categories.map((cat, idx) => {
+                                    const slug   = cat.slug || cat.name;
+                                    const active = catFilter === slug;
+                                    const icon   = CAT_ICONS[(idx + 1) % CAT_ICONS.length];
+                                    return (
+                                        <button
+                                            key={cat.id ?? slug}
+                                            onClick={() => setCatFilter(slug)}
+                                            style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 50, border: `1.5px solid ${active ? '#081f4e' : '#e2e8f0'}`, background: active ? '#081f4e' : '#fff', color: active ? '#fff' : '#475569', fontFamily: 'Poppins,sans-serif', fontSize: '.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}
+                                        >
+                                            <i className={icon} style={{ fontSize: '.72rem' }}></i> {cat.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Search bar + enroll filter + count */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
                                     <i className="fas fa-search" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '.88rem', pointerEvents: 'none' }}></i>
                                     <input
                                         type="text"
@@ -227,6 +202,24 @@ export default function BrowsePrograms() {
                                         style={{ width: '100%', padding: '13px 16px 13px 42px', borderRadius: 50, border: '1.5px solid #e8ecf4', fontFamily: 'Poppins,sans-serif', fontSize: '.88rem', outline: 'none', background: '#fff', boxShadow: '0 2px 8px rgba(8,31,78,.05)', boxSizing: 'border-box' }}
                                     />
                                 </div>
+
+                                {/* Enroll filter pills */}
+                                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                    {[
+                                        { value: 'all',          icon: 'fa-list',        label: 'All'          },
+                                        { value: 'enrolled',     icon: 'fa-check-circle', label: 'Enrolled'     },
+                                        { value: 'not-enrolled', icon: 'fa-plus-circle',  label: 'Not Enrolled' },
+                                    ].map(({ value, icon, label }) => {
+                                        const active = enrollFilter === value;
+                                        return (
+                                            <button key={value} onClick={() => setEnrollFilter(value)}
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 50, border: `1.5px solid ${active ? '#fe730c' : '#e8ecf4'}`, background: active ? 'rgba(254,115,12,.08)' : '#fff', color: active ? '#fe730c' : '#64748b', fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
+                                                <i className={`fas ${icon}`} style={{ fontSize: '.72rem' }}></i> {label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
                                 {!loading && (
                                     <span style={{ flexShrink: 0, padding: '10px 20px', borderRadius: 50, background: '#f1f5f9', color: '#475569', fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 700, border: '1.5px solid #e8ecf4', whiteSpace: 'nowrap' }}>
                                         {filtered.length} course{filtered.length !== 1 ? 's' : ''} found
@@ -312,6 +305,14 @@ export default function BrowsePrograms() {
                                                     )}
                                                 </div>
 
+                                                {/* Price */}
+                                                <div style={{ padding: '8px 18px 10px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <i className="fas fa-tag" style={{ color: '#fe730c', fontSize: '.72rem' }}></i>
+                                                    <span style={{ fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 700, color: course.price ? '#081f4e' : '#94a3b8' }}>
+                                                        {course.price || 'Contact Us'}
+                                                    </span>
+                                                </div>
+
                                                 {/* Action footer */}
                                                 <div style={{ padding: '10px 18px 16px', borderTop: '1px solid #f8fafc' }}>
                                                     {!status && (
@@ -344,8 +345,6 @@ export default function BrowsePrograms() {
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
 
             {/* ── Enroll Modal ── */}
             {enrollModal && (

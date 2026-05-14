@@ -48,16 +48,19 @@ Route::prefix('auth')->group(function () {
     Route::post('/login',    [AuthController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/me',               [AuthController::class, 'me']);
-        Route::put('/profile',          [AuthController::class, 'updateProfile']);
-        Route::put('/password',         [AuthController::class, 'updatePassword']);
-        Route::post('/logout',          [AuthController::class, 'logout']);
+        Route::get('/me',      [AuthController::class, 'me']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/password',[AuthController::class, 'updatePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
 // Protected resource routes (no prefix)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats',      [DashboardController::class, 'stats']);
+    Route::get('/profile/student-info',  [AuthController::class, 'studentInfo']);
+    Route::put('/profile/student-info',  [AuthController::class, 'updateStudentInfo']);
+    Route::post('/profile/avatar',       [AuthController::class, 'uploadAvatar']);
     Route::post('/enrollments/self',    [EnrollmentController::class, 'selfEnroll']);
 
     Route::get('/schools',              [SchoolController::class, 'index']);

@@ -2052,9 +2052,7 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
 .profile-avatar-ring {
   position: absolute; inset: -4px; border-radius: 50%;
   border: 3px dashed rgba(254,115,12,.35);
-  animation: spin 12s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 .profile-avatar-name { font-family:'Poppins',sans-serif; font-size:1.05rem; font-weight:700; color:#081f4e; margin:0 0 4px; }
 .profile-avatar-email { font-size:.8rem; color:#aaa; margin:0 0 14px; word-break:break-all; }
 .profile-role-badge {

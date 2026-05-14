@@ -78,6 +78,20 @@ export function AuthProvider({ children }) {
         return data;
     };
 
+    const updateAvatar = async (file) => {
+        const form = new FormData();
+        form.append('avatar', file);
+        const res = await fetch('/api/profile/avatar', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw data;
+        setUser(data.user);
+        return data;
+    };
+
     const updatePassword = async (current_password, password, password_confirmation) => {
         const res = await fetch('/api/auth/password', {
             method: 'PUT',
@@ -117,7 +131,7 @@ export function AuthProvider({ children }) {
     const refreshUser = useCallback(() => fetchMe(token), [token, fetchMe]);
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, updatePassword, can, refreshUser }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, updateAvatar, updatePassword, can, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

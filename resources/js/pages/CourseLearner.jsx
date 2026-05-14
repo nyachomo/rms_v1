@@ -1,9 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DashboardSidebar from '../components/DashboardSidebar';
-import DashboardNavbar  from '../components/DashboardNavbar';
 import AccessDenied from '../components/AccessDenied';
+import { PageTitleContext } from '../components/LearningLayout';
+import CodeMirror from '@uiw/react-codemirror';
+import { html as cmHtml } from '@codemirror/lang-html';
+import { css as cmCss } from '@codemirror/lang-css';
+import { javascript as cmJs } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
+
+function buildPlaySrc(html, css, js) {
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
+}
 
 function getEmbedUrl(url) {
     if (!url) return null;
@@ -499,16 +507,27 @@ export default function CourseLearner() {
     const { courseSlug } = useParams();
     const { user, token, can } = useAuth();
     const navigate = useNavigate();
+    const { setPageTitle } = useContext(PageTitleContext);
 
     const [data, setData]             = useState(null);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState('');
     const [activeId, setActiveId]     = useState(null);
+    const [activeModId, setActiveModId] = useState(null);
     const [completing, setCompleting] = useState(false);
     const [lessonPanelOpen, setLessonPanel] = useState(true);
     const [expandedMods, setExpandedMods]   = useState({});
     const [examOpen, setExamOpen]     = useState(false);
     const contentRef = useRef(null);
+
+    const [playOpen, setPlayOpen]   = useState(false);
+    const [playTab,  setPlayTab]    = useState('html');
+    const [playHtml, setPlayHtml]   = useState('<h1>Hello World!</h1>\n<p>Edit the code and click <strong>Run</strong>.</p>');
+    const [playCss,  setPlayCss]    = useState('body { font-family: sans-serif; padding: 20px; }\nh1  { color: #fe730c; }');
+    const [playJs,   setPlayJs]     = useState('// JavaScript goes here\nconsole.log("Ready!");');
+    const [playSrc,  setPlaySrc]    = useState('');
+
+    const runPlay = () => setPlaySrc(buildPlaySrc(playHtml, playCss, playJs));
 
     useEffect(() => {
         if (!token) { navigate('/login'); return; }
@@ -523,7 +542,11 @@ export default function CourseLearner() {
                 setData(d);
                 const allL = d.modules?.flatMap(m => m.lessons) ?? [];
                 const first = allL.find(l => !l.completed) ?? allL[0];
-                if (first) setActiveId(first.id);
+                if (first) {
+                    setActiveId(first.id);
+                    const mod = d.modules?.find(m => m.lessons.some(l => l.id === first.id));
+                    if (mod) { setActiveModId(mod.id); }
+                }
             })
             .catch(e => setError(e.message))
             .finally(() => setLoading(false));
@@ -586,190 +609,141 @@ export default function CourseLearner() {
 
     const goTo = id => {
         setActiveId(id);
+        const mod = data?.modules?.find(m => m.lessons.some(l => l.id === id));
+        if (mod) { setActiveModId(mod.id); setExpandedMods(e => ({ ...e, [mod.id]: true })); }
         contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const courseTitle = data?.course?.title ?? 'Course';
+    useEffect(() => { if (data?.course?.title) setPageTitle(data.course.title); }, [data?.course?.title]);
 
     if (loading) return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
                 <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: '#fe730c' }}></i>
                 <p style={{ color: '#9ca3af', fontFamily: 'Poppins,sans-serif', fontSize: '.9rem' }}>Loading course…</p>
             </div>
-        </div>
     );
 
     if (error) return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, padding: 24, textAlign: 'center' }}>
-                <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'rgba(254,115,12,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <i className="fas fa-lock" style={{ fontSize: '2rem', color: '#fe730c' }}></i>
-                </div>
-                <h2 style={{ color: '#081f4e', fontFamily: 'Poppins,sans-serif', margin: 0, fontSize: '1.3rem' }}>{error}</h2>
-                <p style={{ color: '#6b7280', margin: 0, fontSize: '.9rem' }}>You need an approved enrollment to access this course.</p>
-                <Link to="/dashboard/learning" style={{ background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', borderRadius: 10, padding: '11px 24px', textDecoration: 'none', fontFamily: 'Poppins,sans-serif', fontWeight: 700, marginTop: 8 }}>
-                    <i className="fas fa-arrow-left" style={{ marginRight: 8 }}></i>My Courses
-                </Link>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, padding: 24, textAlign: 'center' }}>
+            <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'rgba(254,115,12,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="fas fa-lock" style={{ fontSize: '2rem', color: '#fe730c' }}></i>
             </div>
+            <h2 style={{ color: '#081f4e', fontFamily: 'Poppins,sans-serif', margin: 0, fontSize: '1.3rem' }}>{error}</h2>
+            <p style={{ color: '#6b7280', margin: 0, fontSize: '.9rem' }}>You need an approved enrollment to access this course.</p>
+            <Link to="/dashboard/learning" style={{ background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', borderRadius: 10, padding: '11px 24px', textDecoration: 'none', fontFamily: 'Poppins,sans-serif', fontWeight: 700, marginTop: 8 }}>
+                <i className="fas fa-arrow-left" style={{ marginRight: 8 }}></i>My Courses
+            </Link>
         </div>
     );
 
     return (
-        <div className="db-wrap">
-            <DashboardSidebar />
-            <div className="db-main" style={{ height: '100vh', overflow: 'hidden' }}>
-                <DashboardNavbar page={courseTitle} />
+        <>
 
-                {/* ── Course progress bar ── */}
-                <div style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0, height: 52, borderBottom: '1.5px solid #e8ecf4' }}>
-                    {/* Toggle sidebar */}
-                    <button onClick={() => setLessonPanel(s => !s)} title={lessonPanelOpen ? 'Hide lessons' : 'Show lessons'}
-                        style={{ width: 34, height: 34, borderRadius: 9, cursor: 'pointer', fontSize: '.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .2s', background: lessonPanelOpen ? 'rgba(254,115,12,.1)' : '#f1f5f9', border: `1.5px solid ${lessonPanelOpen ? 'rgba(254,115,12,.4)' : '#e2e8f0'}`, color: lessonPanelOpen ? '#fe730c' : '#64748b' }}>
-                        <i className="fas fa-bars-staggered"></i>
-                    </button>
-                    {/* Progress */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                        <span style={{ fontSize: '.7rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
-                            {completedCount} / {totalCount} lessons
-                        </span>
-                        <div style={{ flex: 1, height: 7, background: '#f1f5f9', borderRadius: 50, overflow: 'hidden', maxWidth: 260 }}>
-                            <div style={{ height: '100%', width: `${progressPct}%`, borderRadius: 50, transition: 'width .6s ease', background: progressPct === 100 ? 'linear-gradient(90deg,#16a34a,#22c55e)' : 'linear-gradient(90deg,#fe730c,#fb923c)' }}></div>
-                        </div>
-                        <span style={{ fontSize: '.78rem', fontWeight: 800, color: progressPct === 100 ? '#16a34a' : '#fe730c', minWidth: 36 }}>{progressPct}%</span>
-                        {progressPct === 100 && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 10px', fontSize: '.65rem', fontWeight: 700, color: '#16a34a' }}>
-                                <i className="fas fa-trophy"></i> Complete!
-                            </span>
-                        )}
+            {/* ── Course progress bar ── */}
+            <div style={{ background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0, height: 60, borderBottom: '2px solid #e2e8f0', boxShadow: '0 2px 8px rgba(8,31,78,.05)' }}>
+                <i className="fas fa-graduation-cap" style={{ color: '#fe730c', fontSize: '.95rem', flexShrink: 0 }}></i>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
+                    <span style={{ fontSize: '.72rem', color: '#64748b', fontWeight: 700, letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
+                        {completedCount} / {totalCount} lessons
+                    </span>
+                    <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden', maxWidth: 300 }}>
+                        <div style={{ height: '100%', width: `${progressPct}%`, borderRadius: 99, transition: 'width .6s ease', background: progressPct === 100 ? 'linear-gradient(90deg,#16a34a,#22c55e)' : 'linear-gradient(90deg,#fe730c,#fb923c)', boxShadow: progressPct > 0 ? '0 0 6px rgba(254,115,12,.4)' : 'none' }}></div>
                     </div>
-                    {/* Lesson counter */}
-                    {lesson && (
-                        <span style={{ fontSize: '.72rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            Lesson {currentIndex + 1} of {totalCount}
+                    <span style={{ fontSize: '.82rem', fontWeight: 800, color: progressPct === 100 ? '#16a34a' : '#fe730c', minWidth: 40 }}>{progressPct}%</span>
+                    {progressPct === 100 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '4px 12px', fontSize: '.67rem', fontWeight: 700, color: '#16a34a' }}>
+                            <i className="fas fa-trophy"></i> Complete!
                         </span>
                     )}
                 </div>
+                {lesson && (
+                    <span style={{ fontSize: '.72rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, padding: '4px 14px' }}>
+                        Lesson {currentIndex + 1} of {totalCount}
+                    </span>
+                )}
+                <button onClick={() => setPlayOpen(v => !v)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 20, border: 'none', background: playOpen ? 'linear-gradient(135deg,#fe730c,#f97316)' : '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, flexShrink: 0, transition: 'all .2s', boxShadow: '0 2px 8px rgba(8,31,78,.2)' }}>
+                    <i className={`fas fa-${playOpen ? 'times' : 'terminal'}`} style={{ fontSize: '.7rem' }}></i>
+                    {playOpen ? 'Close Playground' : 'Code Playground'}
+                </button>
+            </div>
 
-                <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* ── Body: vertical module list (left) + lesson content (right) ── */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-                    {/* ── Lesson list panel ── */}
-                    <div style={{ width: lessonPanelOpen ? 308 : 0, flexShrink: 0, background: '#fff', display: 'flex', flexDirection: 'column', transition: 'width .28s cubic-bezier(.4,0,.2,1)', overflow: 'hidden', borderRight: '1.5px solid #e8ecf4' }}>
-
-                        {/* Panel header */}
-                        <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid #e8ecf4', flexShrink: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#fe730c,#f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <i className="fas fa-list-ul" style={{ color: '#fff', fontSize: '.65rem' }}></i>
-                                </div>
-                                <span style={{ fontSize: '.78rem', fontWeight: 800, color: '#1e293b', letterSpacing: '.02em', textTransform: 'uppercase' }}>Course Content</span>
-                            </div>
-                            {/* Progress ring area */}
-                            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 14px', border: '1px solid #e8ecf4' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 9 }}>
-                                    <div style={{ flex: 1, height: 5, background: '#e8ecf4', borderRadius: 50, overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', width: `${progressPct}%`, background: progressPct === 100 ? 'linear-gradient(90deg,#16a34a,#22c55e)' : 'linear-gradient(90deg,#fe730c,#fb923c)', borderRadius: 50, transition: 'width .6s ease' }}></div>
-                                    </div>
-                                    <span style={{ fontSize: '.72rem', fontWeight: 800, color: progressPct === 100 ? '#16a34a' : '#fe730c', minWidth: 32, textAlign: 'right' }}>{progressPct}%</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: 14 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80' }}></div>
-                                        <span style={{ fontSize: '.68rem', color: '#64748b' }}><strong style={{ color: '#16a34a' }}>{completedCount}</strong> done</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#cbd5e1' }}></div>
-                                        <span style={{ fontSize: '.68rem', color: '#64748b' }}><strong style={{ color: '#475569' }}>{totalCount - completedCount}</strong> left</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Module list */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 20px' }}>
-                            {data?.modules?.map((mod, mi) => {
-                                const modOpen      = expandedMods[mod.id] === true;
-                                const modCompleted = mod.lessons.filter(l => l.completed).length;
-                                const modTotal     = mod.lessons.length;
-                                const modPct       = modTotal > 0 ? Math.round((modCompleted / modTotal) * 100) : 0;
-                                const hasActive    = mod.lessons.some(l => l.id === activeId);
-                                const modDone      = modCompleted === modTotal && modTotal > 0;
-                                const accentColor  = hasActive ? '#fe730c' : modDone ? '#16a34a' : '#6366f1';
-                                const cardShadow   = hasActive ? '0 4px 16px rgba(254,115,12,.13)' : modDone ? '0 4px 16px rgba(22,163,74,.1)' : '0 2px 10px rgba(8,31,78,.07)';
-                                return (
-                                    <div key={mod.id} style={{ marginBottom: 12, borderRadius: 14, background: '#fff', boxShadow: cardShadow, overflow: 'hidden', border: '1.5px solid #eef2f8', position: 'relative' }}>
-                                        {/* Left accent bar */}
-                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: hasActive ? 'linear-gradient(180deg,#fe730c,#fb923c)' : modDone ? 'linear-gradient(180deg,#16a34a,#22c55e)' : 'linear-gradient(180deg,#c7d2fe,#a5b4fc)', borderRadius: '14px 0 0 14px' }}></div>
-                                        {/* Module header */}
-                                        <button onClick={() => setExpandedMods(e => ({ ...e, [mod.id]: !modOpen }))}
-                                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px 13px 18px', background: 'transparent', border: 'none', borderBottom: modOpen ? '1.5px solid #f1f5f9' : 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'Poppins,sans-serif', transition: 'background .18s', position: 'relative', overflow: 'hidden' }}>
-                                            {/* Decorative blob */}
-                                            <div style={{ position: 'absolute', right: -18, top: -18, width: 72, height: 72, borderRadius: '50%', background: hasActive ? 'rgba(254,115,12,.08)' : modDone ? 'rgba(22,163,74,.07)' : 'rgba(99,102,241,.06)', pointerEvents: 'none' }}></div>
-                                            <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.75rem', fontWeight: 800, background: hasActive ? 'linear-gradient(135deg,#fe730c,#fb923c)' : modDone ? 'linear-gradient(135deg,#16a34a,#22c55e)' : 'linear-gradient(135deg,#6366f1,#818cf8)', color: '#fff', boxShadow: `0 3px 10px ${hasActive ? 'rgba(254,115,12,.35)' : modDone ? 'rgba(22,163,74,.3)' : 'rgba(99,102,241,.3)'}` }}>
-                                                {modDone ? <i className="fas fa-check" style={{ fontSize: '.68rem' }}></i> : mi + 1}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
-                                                <div style={{ fontSize: '.83rem', fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>{mod.title}</div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ flex: 1, height: 4, background: '#f1f5f9', borderRadius: 50, overflow: 'hidden' }}>
-                                                        <div style={{ height: '100%', width: `${modPct}%`, background: modDone ? 'linear-gradient(90deg,#16a34a,#22c55e)' : hasActive ? 'linear-gradient(90deg,#fe730c,#fb923c)' : 'linear-gradient(90deg,#6366f1,#818cf8)', borderRadius: 50, transition: 'width .4s' }}></div>
-                                                    </div>
-                                                    <span style={{ fontSize: '.62rem', color: accentColor, fontWeight: 700, flexShrink: 0 }}>{modPct}%</span>
+                {/* Vertical module panel */}
+                {data?.modules?.length > 0 && (
+                    <div style={{ width: 290, flexShrink: 0, background: '#f4f6fb', borderRight: '1.5px solid #e8ecf4', overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 10px', gap: 8 }}>
+                        {data.modules.map((mod, mi) => {
+                            const isOpen       = expandedMods[mod.id] === true;
+                            const modCompleted = mod.lessons.filter(l => l.completed).length;
+                            const modTotal     = mod.lessons.length;
+                            const modPct       = modTotal > 0 ? Math.round((modCompleted / modTotal) * 100) : 0;
+                            const hasActive    = mod.lessons.some(l => l.id === activeId);
+                            const modDone      = modCompleted === modTotal && modTotal > 0;
+                            const numBg        = hasActive ? 'linear-gradient(135deg,#fe730c,#fb923c)' : modDone ? 'linear-gradient(135deg,#16a34a,#22c55e)' : 'linear-gradient(135deg,#6366f1,#818cf8)';
+                            return (
+                                <div key={mod.id} style={{ borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(8,31,78,.07)', border: '1.5px solid #e8ecf4' }}>
+                                    {/* Module header */}
+                                    <button onClick={() => setExpandedMods(e => ({ ...e, [mod.id]: !isOpen }))}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', border: 'none', background: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', textAlign: 'left', transition: 'background .15s' }}>
+                                        <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', fontWeight: 800, background: numBg, color: '#fff', boxShadow: '0 3px 8px rgba(0,0,0,.18)' }}>
+                                            {modDone ? <i className="fas fa-check" style={{ fontSize: '.58rem' }}></i> : mi + 1}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '.8rem', fontWeight: 700, color: hasActive ? '#c2410c' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mod.title}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                                                <div style={{ flex: 1, height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${modPct}%`, background: modDone ? 'linear-gradient(90deg,#16a34a,#22c55e)' : 'linear-gradient(90deg,#fe730c,#fb923c)', borderRadius: 99, transition: 'width .4s' }}></div>
                                                 </div>
-                                                <div style={{ fontSize: '.62rem', color: '#94a3b8', marginTop: 3 }}>{modCompleted}/{modTotal} lessons</div>
+                                                <span style={{ fontSize: '.6rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>{modCompleted}/{modTotal}</span>
                                             </div>
-                                            <div style={{ width: 24, height: 24, borderRadius: 7, background: '#f8fafc', border: '1px solid #e8ecf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 1 }}>
-                                                <i className={`fas fa-chevron-${modOpen ? 'up' : 'down'}`} style={{ color: '#94a3b8', fontSize: '.5rem' }}></i>
-                                            </div>
-                                        </button>
+                                        </div>
+                                        <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ color: hasActive ? '#fe730c' : '#cbd5e1', fontSize: '.54rem', flexShrink: 0 }}></i>
+                                    </button>
 
-                                        {/* Lessons inside card */}
-                                        {modOpen && (
-                                            <div style={{ padding: '6px 8px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                                {mod.lessons.map((l, li) => {
-                                                    const isActive     = l.id === activeId;
-                                                    const tColor       = TYPE_COLOR[l.type] ?? '#6b7280';
-                                                    const examPassed   = l.exam_passed;
-                                                    const hasExamPending = l.has_exam && !l.completed && !examPassed;
-                                                    return (
-                                                        <button key={l.id} onClick={() => goTo(l.id)} style={{
-                                                            width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-                                                            padding: '9px 10px', borderRadius: 9,
-                                                            cursor: 'pointer', textAlign: 'left',
-                                                            transition: 'all .15s', fontFamily: 'Poppins,sans-serif',
-                                                            background: isActive ? 'linear-gradient(135deg,rgba(254,115,12,.12),rgba(251,146,60,.05))' : l.completed ? '#f0fdf4' : '#fafafa',
-                                                            border: `1.5px solid ${isActive ? 'rgba(254,115,12,.35)' : l.completed ? '#d1fae5' : '#f1f5f9'}`,
-                                                        }}>
-                                                            <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.6rem', fontWeight: 800, transition: 'all .15s', background: l.completed ? '#dcfce7' : isActive ? 'rgba(254,115,12,.15)' : '#f1f5f9', color: l.completed ? '#16a34a' : isActive ? '#fe730c' : '#94a3b8' }}>
-                                                                {l.completed ? <i className="fas fa-check" style={{ fontSize: '.52rem' }}></i> : li + 1}
+                                    {/* Lessons list */}
+                                    {isOpen && (
+                                        <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                                            {mod.lessons.map((l, li) => {
+                                                const isActive       = l.id === activeId;
+                                                const tColor         = TYPE_COLOR[l.type] ?? '#6b7280';
+                                                const hasExamPending = l.has_exam && !l.completed && !l.exam_passed;
+                                                return (
+                                                    <button key={l.id} onClick={() => goTo(l.id)}
+                                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px 9px 14px', border: 'none', borderBottom: '1px solid #f4f6fb', borderLeft: `3px solid ${isActive ? '#fe730c' : 'transparent'}`, background: isActive ? 'rgba(254,115,12,.07)' : l.completed ? '#fafffe' : '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', textAlign: 'left', transition: 'all .15s' }}>
+                                                        <div style={{ width: 24, height: 24, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.6rem', fontWeight: 800, background: l.completed ? '#dcfce7' : isActive ? 'rgba(254,115,12,.15)' : '#f1f5f9', color: l.completed ? '#16a34a' : isActive ? '#fe730c' : '#94a3b8' }}>
+                                                            {l.completed ? <i className="fas fa-check" style={{ fontSize: '.52rem' }}></i> : li + 1}
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '.76rem', fontWeight: isActive ? 700 : 500, color: isActive ? '#fe730c' : l.completed ? '#94a3b8' : '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '.57rem', color: tColor, background: `${tColor}18`, padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                                                                    <i className={TYPE_ICON[l.type]} style={{ fontSize: '.46rem' }}></i> {TYPE_LABEL[l.type]}
+                                                                </span>
+                                                                {l.duration_minutes > 0 && <span style={{ fontSize: '.57rem', color: '#94a3b8' }}>{l.duration_minutes}m</span>}
+                                                                {hasExamPending && <i className="fas fa-clipboard-list" style={{ fontSize: '.54rem', color: '#d97706' }}></i>}
+                                                                {l.exam_passed  && <i className="fas fa-medal"          style={{ fontSize: '.54rem', color: '#16a34a' }}></i>}
                                                             </div>
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: '.79rem', fontWeight: isActive ? 700 : 500, color: isActive ? '#fe730c' : l.completed ? '#94a3b8' : '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.title}</div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: '.6rem', color: tColor, background: `${tColor}18`, padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
-                                                                        <i className={TYPE_ICON[l.type]} style={{ fontSize: '.5rem' }}></i> {TYPE_LABEL[l.type]}
-                                                                    </span>
-                                                                    {l.duration_minutes > 0 && <span style={{ fontSize: '.58rem', color: '#94a3b8' }}>{l.duration_minutes}m</span>}
-                                                                    {hasExamPending && <span style={{ fontSize: '.56rem', color: '#d97706', display: 'flex', alignItems: 'center', gap: 2 }}><i className="fas fa-clipboard-list"></i> Exam</span>}
-                                                                    {examPassed && <span style={{ fontSize: '.56rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: 2 }}><i className="fas fa-medal"></i> Passed</span>}
-                                                                </div>
-                                                            </div>
-                                                            {isActive && <div style={{ width: 3, height: 26, background: 'linear-gradient(180deg,#fe730c,#fb923c)', borderRadius: 50, flexShrink: 0 }}></div>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
+                )}
 
-                    {/* ── Main lesson content ── */}
-                    <div ref={contentRef} style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+                {/* ── Lesson content + optional playground ── */}
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+
+                    {/* Lesson content */}
+                    <div style={{ flex: 1, overflow: 'hidden', borderRight: playOpen ? '2px solid #30363d' : 'none' }}>
+                    <div ref={contentRef} style={{ height: '100%', overflowY: 'auto', background: '#f8fafc' }}>
                         {lesson ? (
                             <div style={{ maxWidth: 880, margin: '0 auto', padding: '28px 32px 52px' }}>
 
@@ -914,6 +888,76 @@ export default function CourseLearner() {
                         )}
                     </div>
                 </div>
+
+                    {/* ── Inline Code Playground ── */}
+                    {playOpen && (
+                        <div style={{ width: '46%', flexShrink: 0, display: 'flex', flexDirection: 'column', background: '#0d1117', overflow: 'hidden' }}>
+
+                            {/* Playground toolbar */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
+                                <i className="fas fa-terminal" style={{ color: '#fe730c', fontSize: '.8rem' }}></i>
+                                <span style={{ color: '#c9d1d9', fontSize: '.78rem', fontWeight: 700, fontFamily: 'Poppins,sans-serif', flex: 1 }}>Code Playground</span>
+                                <button onClick={runPlay}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700 }}>
+                                    <i className="fas fa-play" style={{ fontSize: '.65rem' }}></i> Run
+                                </button>
+                            </div>
+
+                            {/* Tab bar */}
+                            <div style={{ display: 'flex', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
+                                {[
+                                    { id: 'html', label: 'HTML',       color: '#e34c26' },
+                                    { id: 'css',  label: 'CSS',        color: '#264de4' },
+                                    { id: 'js',   label: 'JavaScript', color: '#f7df1e' },
+                                ].map(t => (
+                                    <button key={t.id} onClick={() => setPlayTab(t.id)}
+                                        style={{ padding: '8px 18px', border: 'none', background: playTab === t.id ? '#0d1117' : 'transparent', color: playTab === t.id ? t.color : '#8b949e', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: playTab === t.id ? `2px solid ${t.color}` : '2px solid transparent', transition: 'all .15s' }}>
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Editor */}
+                            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                                    {playTab === 'html' && (
+                                        <CodeMirror value={playHtml} theme={oneDark} extensions={[cmHtml()]}
+                                            onChange={v => setPlayHtml(v)}
+                                            style={{ fontSize: 13, height: '100%' }}
+                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
+                                    )}
+                                    {playTab === 'css' && (
+                                        <CodeMirror value={playCss} theme={oneDark} extensions={[cmCss()]}
+                                            onChange={v => setPlayCss(v)}
+                                            style={{ fontSize: 13, height: '100%' }}
+                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
+                                    )}
+                                    {playTab === 'js' && (
+                                        <CodeMirror value={playJs} theme={oneDark} extensions={[cmJs()]}
+                                            onChange={v => setPlayJs(v)}
+                                            style={{ fontSize: 13, height: '100%' }}
+                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
+                                    )}
+                                </div>
+
+                                {/* Preview */}
+                                <div style={{ height: '40%', flexShrink: 0, borderTop: '2px solid #30363d', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: '#161b22', flexShrink: 0 }}>
+                                        <div style={{ display: 'flex', gap: 5 }}>
+                                            {['#ff5f57','#ffbd2e','#28c840'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}
+                                        </div>
+                                        <i className="fas fa-eye" style={{ color: '#8b949e', fontSize: '.72rem' }}></i>
+                                        <span style={{ color: '#8b949e', fontSize: '.72rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Preview</span>
+                                        {!playSrc && <span style={{ marginLeft: 'auto', fontSize: '.65rem', color: '#6b7280', fontFamily: 'Poppins,sans-serif' }}>Click Run to see output</span>}
+                                    </div>
+                                    <iframe key={playSrc} srcDoc={playSrc || '<body style="font-family:sans-serif;color:#6b7280;display:flex;align-items:center;justify-content:center;height:100%;margin:0"><p>▶ Click <strong style=color:#fe730c>Run</strong> to preview</p></body>'}
+                                        title="Playground Preview" sandbox="allow-scripts"
+                                        style={{ flex: 1, border: 'none', background: '#fff', width: '100%' }} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Exam modal */}
@@ -925,6 +969,6 @@ export default function CourseLearner() {
                     onClose={() => setExamOpen(false)}
                 />
             )}
-        </div>
+        </>
     );
 }

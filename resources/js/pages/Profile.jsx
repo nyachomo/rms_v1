@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardSidebar from '../components/DashboardSidebar';
@@ -19,14 +19,45 @@ function Toast({ message, type, onClose }) {
 }
 
 export default function Profile() {
-    const { user, updateProfile, updatePassword, logout, can } = useAuth();
+    const { user, token, updateProfile, updateAvatar, updatePassword, logout, can } = useAuth();
     const navigate = useNavigate();
 
-    // Profile form
-    const [profile, setProfile]         = useState({ name: user?.name || '', email: user?.email || '' });
-    const [profileErrors, setProfileErrors] = useState({});
-    const [profileLoading, setProfileLoading] = useState(false);
-    const [profileToast, setProfileToast]     = useState(null);
+    // Avatar upload
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const [avatarToast, setAvatarToast]         = useState(null);
+    const avatarInputRef = useRef(null);
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAvatarUploading(true);
+        setAvatarToast(null);
+        try {
+            await updateAvatar(file);
+            setAvatarToast({ message: 'Profile photo updated!', type: 'success' });
+        } catch {
+            setAvatarToast({ message: 'Upload failed. Max size 2 MB.', type: 'error' });
+        } finally {
+            setAvatarUploading(false);
+            e.target.value = '';
+        }
+    };
+
+    // Merged personal info form (user + student fields)
+    const [info, setInfo]           = useState({ name: user?.name || '', email: user?.email || '', phone: '', gender: '', date_of_birth: '', address: '' });
+    const [infoErrors, setInfoErrors]   = useState({});
+    const [infoLoading, setInfoLoading] = useState(false);
+    const [infoSaving, setInfoSaving]   = useState(false);
+    const [infoToast, setInfoToast]     = useState(null);
+
+    // Extra display-only fields from student record
+    const [studentMeta, setStudentMeta] = useState({ courses: '', classes: '', status: '' });
+
+    // Parent / Guardian details form
+    const [parent, setParent]           = useState({ parent_name: '', parent_phone: '', parent_email: '', parent_relationship: '' });
+    const [parentErrors, setParentErrors]   = useState({});
+    const [parentSaving, setParentSaving]   = useState(false);
+    const [parentToast, setParentToast]     = useState(null);
 
     // Password form
     const [pwd, setPwd]               = useState({ current_password: '', password: '', password_confirmation: '' });
@@ -35,21 +66,88 @@ export default function Profile() {
     const [pwdToast, setPwdToast]     = useState(null);
     const [showPwd, setShowPwd]       = useState({ current: false, new: false, confirm: false });
 
-    const handleProfile = e => setProfile({ ...profile, [e.target.name]: e.target.value });
-    const handlePwd     = e => setPwd({ ...pwd, [e.target.name]: e.target.value });
+    useEffect(() => {
+        if (!token) return;
+        setInfoLoading(true);
+        fetch('/api/profile/student-info', {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+            .then(r => r.json())
+            .then(d => {
+                const enrollments = d.enrollments || [];
+                const courses = enrollments.map(e => e.course).filter(Boolean).join(', ') || '—';
+                const classes = [...new Set(enrollments.map(e => e.class).filter(Boolean))].join(', ') || '—';
 
-    const submitProfile = async e => {
+                if (d.student) {
+                    setInfo(prev => ({
+                        ...prev,
+                        phone:         d.student.phone         || '',
+                        gender:        d.student.gender        || '',
+                        date_of_birth: d.student.date_of_birth || '',
+                        address:       d.student.address       || '',
+                    }));
+                    setParent({
+                        parent_name:         d.student.parent_name         || '',
+                        parent_phone:        d.student.parent_phone        || '',
+                        parent_email:        d.student.parent_email        || '',
+                        parent_relationship: d.student.parent_relationship || '',
+                    });
+                }
+                setStudentMeta({
+                    courses,
+                    classes,
+                    status: d.student?.status || '',
+                });
+            })
+            .finally(() => setInfoLoading(false));
+    }, [token]);
+
+    const handleInfo   = e => setInfo({ ...info, [e.target.name]: e.target.value });
+    const handleParent = e => setParent({ ...parent, [e.target.name]: e.target.value });
+    const handlePwd    = e => setPwd({ ...pwd, [e.target.name]: e.target.value });
+
+    const submitInfo = async e => {
         e.preventDefault();
-        setProfileErrors({});
-        setProfileLoading(true);
+        setInfoErrors({});
+        setInfoSaving(true);
         try {
-            await updateProfile(profile.name, profile.email);
-            setProfileToast({ message: 'Profile updated successfully!', type: 'success' });
+            // Save name + email to users table
+            await updateProfile(info.name, info.email);
+            // Save phone/gender/DOB/address to students table
+            const res = await fetch('/api/profile/student-info', {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: info.phone, gender: info.gender, date_of_birth: info.date_of_birth, address: info.address }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw data;
+            setInfoToast({ message: 'Personal information updated successfully!', type: 'success' });
         } catch (err) {
-            setProfileErrors(err.errors || {});
-            setProfileToast({ message: err.message || 'Update failed.', type: 'error' });
+            setInfoErrors(err.errors || {});
+            setInfoToast({ message: err.message || 'Update failed.', type: 'error' });
         } finally {
-            setProfileLoading(false);
+            setInfoSaving(false);
+        }
+    };
+
+    const submitParent = async e => {
+        e.preventDefault();
+        setParentErrors({});
+        setParentSaving(true);
+        try {
+            const res = await fetch('/api/profile/student-info', {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(parent),
+            });
+            const data = await res.json();
+            if (!res.ok) throw data;
+            setParentToast({ message: data.message || 'Parent details saved.', type: 'success' });
+        } catch (err) {
+            setParentErrors(err.errors || {});
+            setParentToast({ message: err.message || 'Save failed.', type: 'error' });
+        } finally {
+            setParentSaving(false);
         }
     };
 
@@ -95,37 +193,90 @@ export default function Profile() {
 
                     <div className="profile-grid">
 
-                        {/* ── LEFT: Avatar card ── */}
+                        {/* ── LEFT: Profile card ── */}
                         <div className="profile-avatar-card">
-                            <div className="profile-avatar-wrap">
-                                <div className="profile-avatar-circle">{initials}</div>
+                            {/* Avatar */}
+                            <div className="profile-avatar-wrap" style={{ position: 'relative' }}>
+                                {user?.user_image
+                                    ? <img src={user.user_image} alt="Profile" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', display: 'block', position: 'relative', zIndex: 1 }} />
+                                    : <div className="profile-avatar-circle" style={{ position: 'relative', zIndex: 1 }}>{initials}</div>
+                                }
                                 <div className="profile-avatar-ring"></div>
+
+                                {/* Upload overlay */}
+                                <button
+                                    type="button"
+                                    onClick={() => avatarInputRef.current?.click()}
+                                    disabled={avatarUploading}
+                                    title="Change photo"
+                                    style={{
+                                        position: 'absolute', bottom: 4, right: 4,
+                                        width: 28, height: 28, borderRadius: '50%',
+                                        background: '#fe730c', border: '2px solid #fff',
+                                        color: '#fff', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', cursor: 'pointer',
+                                        fontSize: '0.7rem', boxShadow: '0 1px 4px rgba(0,0,0,.25)',
+                                        zIndex: 2,
+                                    }}
+                                >
+                                    {avatarUploading
+                                        ? <i className="fas fa-circle-notch fa-spin"></i>
+                                        : <i className="fas fa-camera"></i>}
+                                </button>
+                                <input
+                                    ref={avatarInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    style={{ display: 'none' }}
+                                    onChange={handleAvatarChange}
+                                />
                             </div>
-                            <h3 className="profile-avatar-name">{user?.name}</h3>
-                            <p className="profile-avatar-email">{user?.email}</p>
-                            <span className="profile-role-badge"><i className="fas fa-shield-alt"></i> {user?.role?.name ?? 'Super Admin'}</span>
-                            <div className="profile-meta">
-                                <div className="profile-meta-item">
-                                    <i className="fas fa-id-badge"></i>
-                                    <div>
-                                        <small>User ID</small>
-                                        <span>#{user?.id}</span>
-                                    </div>
+
+                            {avatarToast && (
+                                <div style={{
+                                    margin: '8px 0 0', padding: '6px 10px', borderRadius: 6, fontSize: '.78rem',
+                                    background: avatarToast.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                                    color: avatarToast.type === 'error' ? '#991b1b' : '#15803d',
+                                    border: `1px solid ${avatarToast.type === 'error' ? '#fca5a5' : '#86efac'}`,
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                }}>
+                                    <i className={`fas fa-${avatarToast.type === 'error' ? 'exclamation-circle' : 'check-circle'}`}></i>
+                                    {avatarToast.message}
+                                    <button onClick={() => setAvatarToast(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+                                        <i className="fas fa-times"></i>
+                                    </button>
                                 </div>
-                                <div className="profile-meta-item">
-                                    <i className="fas fa-check-circle" style={{ color: '#10b981' }}></i>
-                                    <div>
-                                        <small>Account Status</small>
-                                        <span style={{ color: '#10b981' }}>Active</span>
+                            )}
+
+                            {/* Info rows */}
+                            <div style={{ width: '100%', marginTop: 20, borderTop: '1px solid #f1f5f9', paddingTop: 16 }}>
+                                {[
+                                    { label: 'Name',        value: user?.name },
+                                    { label: 'Course',      value: studentMeta.courses || '—' },
+                                    { label: 'Class',       value: studentMeta.classes || '—' },
+                                    { label: 'Gender',      value: info.gender ? info.gender.charAt(0).toUpperCase() + info.gender.slice(1) : '—' },
+                                    { label: 'Phone',       value: info.phone || '—' },
+                                    { label: 'Status',      value: user?.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active', isStatus: true },
+                                ].map(row => (
+                                    <div key={row.label} style={{ display: 'flex', alignItems: 'flex-start', padding: '9px 0', borderBottom: '1px solid #f8fafc' }}>
+                                        <span style={{ minWidth: 96, fontSize: '.78rem', fontWeight: 700, color: '#081f4e', fontFamily: 'Poppins,sans-serif' }}>
+                                            {row.label}
+                                        </span>
+                                        <span style={{
+                                            flex: 1, fontSize: '.82rem', color: row.isStatus ? (row.value === 'Active' ? '#16a34a' : '#dc2626') : '#64748b',
+                                            fontWeight: row.isStatus ? 700 : 400, wordBreak: 'break-word',
+                                        }}>
+                                            {row.value}
+                                        </span>
                                     </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
 
                         {/* ── RIGHT: Forms ── */}
                         <div className="profile-forms">
 
-                            {/* Personal Info */}
+                            {/* ── Personal Information (merged) ── */}
                             <div className="profile-card">
                                 <div className="profile-card-head">
                                     <div className="profile-card-icon" style={{ background: 'linear-gradient(135deg,#0ea5e9,#06b6d4)' }}>
@@ -133,52 +284,168 @@ export default function Profile() {
                                     </div>
                                     <div>
                                         <h4>Personal Information</h4>
-                                        <p>Update your name and email address</p>
+                                        <p>Update your name, contact and personal details</p>
                                     </div>
                                 </div>
-
-                                <Toast
-                                    message={profileToast?.message}
-                                    type={profileToast?.type}
-                                    onClose={() => setProfileToast(null)}
-                                />
-
-                                <form onSubmit={submitProfile} className="profile-form">
-                                    <div className="profile-form-row">
-                                        <div className="profile-field">
-                                            <label>Full Name</label>
-                                            <div className="profile-input-wrap">
-                                                <i className="fas fa-user"></i>
-                                                <input
-                                                    type="text" name="name" required
-                                                    placeholder="Your full name"
-                                                    value={profile.name} onChange={handleProfile}
-                                                />
-                                            </div>
-                                            {profileErrors.name && <span className="profile-error">{profileErrors.name[0]}</span>}
-                                        </div>
-                                        <div className="profile-field">
-                                            <label>Email Address</label>
-                                            <div className="profile-input-wrap">
-                                                <i className="fas fa-envelope"></i>
-                                                <input
-                                                    type="email" name="email" required
-                                                    placeholder="you@example.com"
-                                                    value={profile.email} onChange={handleProfile}
-                                                />
-                                            </div>
-                                            {profileErrors.email && <span className="profile-error">{profileErrors.email[0]}</span>}
-                                        </div>
+                                <Toast message={infoToast?.message} type={infoToast?.type} onClose={() => setInfoToast(null)} />
+                                {infoLoading ? (
+                                    <div style={{ padding: '20px 0', textAlign: 'center', color: '#9ca3af' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ color: '#0ea5e9' }}></i> Loading…
                                     </div>
-                                    <div className="profile-form-footer">
-                                        <button type="submit" className="profile-btn-save" disabled={profileLoading}>
-                                            {profileLoading
-                                                ? <><i className="fas fa-circle-notch fa-spin"></i> Saving…</>
-                                                : <><i className="fas fa-save"></i> Save Changes</>
-                                            }
-                                        </button>
+                                ) : (
+                                    <form onSubmit={submitInfo} className="profile-form">
+                                        <div className="profile-form-row">
+                                            <div className="profile-field">
+                                                <label>Full Name</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-user"></i>
+                                                    <input type="text" name="name" required placeholder="Your full name"
+                                                        value={info.name} onChange={handleInfo} />
+                                                </div>
+                                                {infoErrors.name && <span className="profile-error">{infoErrors.name[0]}</span>}
+                                            </div>
+                                            <div className="profile-field">
+                                                <label>Email Address</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-envelope"></i>
+                                                    <input type="email" name="email" required placeholder="you@example.com"
+                                                        value={info.email} onChange={handleInfo} />
+                                                </div>
+                                                {infoErrors.email && <span className="profile-error">{infoErrors.email[0]}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="profile-form-row">
+                                            <div className="profile-field">
+                                                <label>Phone Number</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-phone"></i>
+                                                    <input type="tel" name="phone" placeholder="e.g. +254 700 000 000"
+                                                        value={info.phone} onChange={handleInfo} />
+                                                </div>
+                                                {infoErrors.phone && <span className="profile-error">{infoErrors.phone[0]}</span>}
+                                            </div>
+                                            <div className="profile-field">
+                                                <label>Gender</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-venus-mars"></i>
+                                                    <select name="gender" value={info.gender} onChange={handleInfo}
+                                                        style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '.9rem', color: info.gender ? '#1e293b' : '#94a3b8' }}>
+                                                        <option value="">Select gender</option>
+                                                        <option value="male">Male</option>
+                                                        <option value="female">Female</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
+                                                </div>
+                                                {infoErrors.gender && <span className="profile-error">{infoErrors.gender[0]}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="profile-form-row">
+                                            <div className="profile-field">
+                                                <label>Date of Birth</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-calendar-alt"></i>
+                                                    <input type="date" name="date_of_birth"
+                                                        value={info.date_of_birth} onChange={handleInfo} />
+                                                </div>
+                                                {infoErrors.date_of_birth && <span className="profile-error">{infoErrors.date_of_birth[0]}</span>}
+                                            </div>
+                                            <div className="profile-field">
+                                                <label>Address</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-map-marker-alt"></i>
+                                                    <input type="text" name="address" placeholder="Your physical address"
+                                                        value={info.address} onChange={handleInfo} />
+                                                </div>
+                                                {infoErrors.address && <span className="profile-error">{infoErrors.address[0]}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="profile-form-footer">
+                                            <button type="submit" className="profile-btn-save" disabled={infoSaving}>
+                                                {infoSaving
+                                                    ? <><i className="fas fa-circle-notch fa-spin"></i> Saving…</>
+                                                    : <><i className="fas fa-save"></i> Save Changes</>}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+
+                            {/* ── Parent / Guardian Details ── */}
+                            <div className="profile-card">
+                                <div className="profile-card-head">
+                                    <div className="profile-card-icon" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                                        <i className="fas fa-users"></i>
                                     </div>
-                                </form>
+                                    <div>
+                                        <h4>Parent / Guardian Details</h4>
+                                        <p>Emergency contact and guardian information</p>
+                                    </div>
+                                </div>
+                                <Toast message={parentToast?.message} type={parentToast?.type} onClose={() => setParentToast(null)} />
+                                {infoLoading ? (
+                                    <div style={{ padding: '20px 0', textAlign: 'center', color: '#9ca3af' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ color: '#f59e0b' }}></i> Loading…
+                                    </div>
+                                ) : (
+                                    <form onSubmit={submitParent} className="profile-form">
+                                        <div className="profile-form-row">
+                                            <div className="profile-field">
+                                                <label>Parent / Guardian Name</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-user-friends"></i>
+                                                    <input type="text" name="parent_name" placeholder="Full name"
+                                                        value={parent.parent_name} onChange={handleParent} />
+                                                </div>
+                                                {parentErrors.parent_name && <span className="profile-error">{parentErrors.parent_name[0]}</span>}
+                                            </div>
+                                            <div className="profile-field">
+                                                <label>Relationship</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-sitemap"></i>
+                                                    <select name="parent_relationship" value={parent.parent_relationship} onChange={handleParent}
+                                                        style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '.9rem', color: parent.parent_relationship ? '#1e293b' : '#94a3b8' }}>
+                                                        <option value="">Select relationship</option>
+                                                        <option value="Father">Father</option>
+                                                        <option value="Mother">Mother</option>
+                                                        <option value="Guardian">Guardian</option>
+                                                        <option value="Sibling">Sibling</option>
+                                                        <option value="Spouse">Spouse</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                                {parentErrors.parent_relationship && <span className="profile-error">{parentErrors.parent_relationship[0]}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="profile-form-row">
+                                            <div className="profile-field">
+                                                <label>Parent Phone</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-phone-alt"></i>
+                                                    <input type="tel" name="parent_phone" placeholder="e.g. +254 700 000 000"
+                                                        value={parent.parent_phone} onChange={handleParent} />
+                                                </div>
+                                                {parentErrors.parent_phone && <span className="profile-error">{parentErrors.parent_phone[0]}</span>}
+                                            </div>
+                                            <div className="profile-field">
+                                                <label>Parent Email</label>
+                                                <div className="profile-input-wrap">
+                                                    <i className="fas fa-envelope"></i>
+                                                    <input type="email" name="parent_email" placeholder="parent@example.com"
+                                                        value={parent.parent_email} onChange={handleParent} />
+                                                </div>
+                                                {parentErrors.parent_email && <span className="profile-error">{parentErrors.parent_email[0]}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="profile-form-footer">
+                                            <button type="submit" className="profile-btn-save" disabled={parentSaving}
+                                                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                                                {parentSaving
+                                                    ? <><i className="fas fa-circle-notch fa-spin"></i> Saving…</>
+                                                    : <><i className="fas fa-save"></i> Save Parent Details</>}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
                             </div>
 
                             {/* Change Password */}
