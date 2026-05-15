@@ -684,7 +684,7 @@ export default function CourseLearner() {
                             const modDone      = modCompleted === modTotal && modTotal > 0;
                             const numBg        = hasActive ? 'linear-gradient(135deg,#fe730c,#fb923c)' : modDone ? 'linear-gradient(135deg,#16a34a,#22c55e)' : 'linear-gradient(135deg,#6366f1,#818cf8)';
                             return (
-                                <div key={mod.id} style={{ borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(8,31,78,.07)', border: '1.5px solid #e8ecf4' }}>
+                                <div key={mod.id} style={{ borderRadius: 12, overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 8px rgba(8,31,78,.07)', border: '1.5px solid #e8ecf4' }}>
                                     {/* Module header */}
                                     <button onClick={() => setExpandedMods(e => ({ ...e, [mod.id]: !isOpen }))}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', border: 'none', background: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', textAlign: 'left', transition: 'background .15s' }}>
