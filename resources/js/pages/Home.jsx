@@ -210,8 +210,7 @@ export default function Home() {
                             <i className="fas fa-star" style={{ color: '#ffe066', fontSize: '.75rem' }}></i> {hero.badge_text || 'New batch starting soon!'}
                         </div>
                         <h1 className="hero-title">
-                            {hero.title_part1 || 'Launch Your'} <span className="text-teal">{hero.title_highlight1 || 'Tech'}</span><br />
-                            <span className="text-orange">{hero.title_highlight2 || 'Career'}</span> {hero.title_part2 || 'Today'}
+                            {hero.title_part1 || 'Launch Your'} <span className="text-teal">{hero.title_highlight1 || 'Tech'}</span> <span className="text-orange">{hero.title_highlight2 || 'Career'}</span> {hero.title_part2 || 'Today'}
                         </h1>
                         <p className="hero-sub">{hero.subtitle || 'Join Techsphere Digital Skills Academy and master cutting-edge technologies with industry experts.'}</p>
                         <div className="hero-btns">

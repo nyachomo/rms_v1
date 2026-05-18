@@ -59,8 +59,9 @@ export default function Navbar() {
                             <li><Link to="/" className={isActive('/') ? 'active' : ''}><i className="fas fa-home"></i> Home</Link></li>
                             <li><Link to="/#about" onClick={() => setTimeout(() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }), 100)}><i className="fas fa-info-circle"></i> About</Link></li>
                             <li><Link to="/courses" className={isActive('/courses') ? 'active' : ''}><i className="fas fa-graduation-cap"></i> Our Courses/Programs</Link></li>
-                            <li><Link to="/ict-club" className={isActive('/ict-club') ? 'active' : ''}><i className="fas fa-laptop-code"></i> ICT Club</Link></li>
+                            {/* <li><Link to="/ict-club" className={isActive('/ict-club') ? 'active' : ''}><i className="fas fa-laptop-code"></i> ICT Club</Link></li> */}
                             <li><Link to="/contact" className={isActive('/contact') ? 'active' : ''}><i className="fas fa-envelope"></i> Contact</Link></li>
+                            <li><Link to="/courses" className={isActive('/courses') ? 'active' : ''}><i className="fas fa-pen-alt"></i> Enrol</Link></li>
                         </ul>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -69,7 +70,11 @@ export default function Navbar() {
                                     <i className="fas fa-graduation-cap"></i> My Learning
                                 </Link>
                             )}
-                            <a href="tel:+254748800500" className="btn-callus"><i className="fas fa-phone-alt"></i> Call us</a>
+                            {!user && (
+                                <Link to="/login" style={{ background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', padding: '8px 20px', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 14px rgba(254,115,12,.3)' }}>
+                                    <i className="fas fa-sign-in-alt"></i> Login
+                                </Link>
+                            )}
                             <div className={`hamburger${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(!menuOpen)} id="ham">
                                 <span></span><span></span><span></span>
                             </div>
@@ -82,9 +87,11 @@ export default function Navbar() {
             <div className={`mobile-menu${menuOpen ? ' open' : ''}`} id="mobile-menu">
                 <Link to="/" onClick={() => setMenuOpen(false)}><i className="fas fa-home"></i> Home</Link>
                 <Link to="/courses" onClick={() => setMenuOpen(false)}><i className="fas fa-graduation-cap"></i> Our Courses/Programs</Link>
-                <Link to="/ict-club" onClick={() => setMenuOpen(false)}><i className="fas fa-laptop-code"></i> ICT Club</Link>
+                {/* <Link to="/ict-club" onClick={() => setMenuOpen(false)}><i className="fas fa-laptop-code"></i> ICT Club</Link> */}
                 <Link to="/contact" onClick={() => setMenuOpen(false)}><i className="fas fa-envelope"></i> Contact</Link>
                 {user && can('learning', 'view') && <Link to="/learn" onClick={() => setMenuOpen(false)}><i className="fas fa-graduation-cap"></i> My Learning</Link>}
+                <Link to="/courses" onClick={() => setMenuOpen(false)}><i className="fas fa-pen-alt"></i> Enrol</Link>
+                {!user && <Link to="/login" onClick={() => setMenuOpen(false)}><i className="fas fa-sign-in-alt"></i> Login</Link>}
             </div>
         </>
     );

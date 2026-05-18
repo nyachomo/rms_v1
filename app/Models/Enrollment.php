@@ -9,7 +9,7 @@ class Enrollment extends Model
 {
     protected $fillable = [
         'course_id', 'intake_id', 'user_id',
-        'school_level_id', 'class_id',
+        'school_level_id', 'class_id', 'school_id',
         'name', 'email', 'phone',
         'sponsorship',
         'sponsor_name', 'sponsor_email', 'sponsor_phone',
@@ -21,4 +21,5 @@ class Enrollment extends Model
     public function user(): BelongsTo         { return $this->belongsTo(User::class); }
     public function schoolLevel(): BelongsTo  { return $this->belongsTo(SchoolLevel::class); }
     public function schoolClass(): BelongsTo  { return $this->belongsTo(SchoolClass::class, 'class_id'); }
+    public function school(): BelongsTo       { return $this->belongsTo(School::class); }
 }

@@ -176,16 +176,6 @@ export default function CourseDetail() {
                                     <i className="fas fa-graduation-cap"></i>
                                     {course.price === 'Contact Us' ? 'Request a Quote' : 'Enroll Now'}
                                 </Link>
-                                <a href="tel:+254748800500" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', border: '1.5px solid #e8eaf0', borderRadius: '12px', color: '#081f4e', textDecoration: 'none', fontFamily: 'Poppins, sans-serif', fontSize: '.88rem', fontWeight: 600, transition: 'all .25s' }}>
-                                    <i className="fas fa-phone-alt" style={{ color: '#fe730c' }}></i> Call for more info
-                                </a>
-                                {tags.length > 0 && (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '18px' }}>
-                                        {tags.map(t => (
-                                            <span key={t} style={{ background: '#f3f4f6', color: '#555', fontSize: '.72rem', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', fontFamily: 'Poppins, sans-serif' }}>{t}</span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>

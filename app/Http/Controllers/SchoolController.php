@@ -13,6 +13,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SchoolController extends Controller
 {
+    public function publicIndex(): JsonResponse
+    {
+        $schools = School::where('school_status', 'active')
+            ->orderBy('school_name')
+            ->get(['id', 'school_name', 'school_location']);
+
+        return response()->json($schools);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = School::query();

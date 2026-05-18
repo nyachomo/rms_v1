@@ -33,11 +33,12 @@ class EnrollmentController extends Controller
             'class_id'        => 'required|exists:school_classes,id',
             'name'            => 'required|string|max:150',
             'email'           => 'required|email|max:200|unique:enrollments,email',
-            'phone'           => 'nullable|string|max:30',
+            'phone'           => 'required|string|max:30',
+            'school_id'       => 'required|exists:schools,id',
             'sponsorship'     => 'required|in:self,guardian',
             'sponsor_name'    => 'required_if:sponsorship,guardian|nullable|string|max:150',
-            'sponsor_email'   => 'required_if:sponsorship,guardian|nullable|email|max:200',
-            'sponsor_phone'   => 'nullable|string|max:30',
+            'sponsor_email'   => 'nullable|email|max:200',
+            'sponsor_phone'   => 'required_if:sponsorship,guardian|nullable|string|max:30',
         ]);
 
         // Prevent duplicate user accounts
@@ -87,8 +88,8 @@ class EnrollmentController extends Controller
             'class_id'        => 'nullable|exists:school_classes,id',
             'sponsorship'     => 'required|in:self,guardian',
             'sponsor_name'    => 'required_if:sponsorship,guardian|nullable|string|max:150',
-            'sponsor_email'   => 'required_if:sponsorship,guardian|nullable|email|max:200',
-            'sponsor_phone'   => 'nullable|string|max:30',
+            'sponsor_email'   => 'nullable|email|max:200',
+            'sponsor_phone'   => 'required_if:sponsorship,guardian|nullable|string|max:30',
         ]);
 
         $alreadyEnrolled = Enrollment::where('user_id', $user->id)

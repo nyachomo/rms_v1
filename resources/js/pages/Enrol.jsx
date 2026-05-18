@@ -54,6 +54,7 @@ export default function Enrol() {
     const [intakes,      setIntakes]    = useState([]);
     const [levels,       setLevels]     = useState([]);
     const [classes,      setClasses]    = useState([]);
+    const [schools,      setSchools]    = useState([]);
     const [loadingClasses, setLoadingClasses] = useState(false);
     const [loading,      setLoading]    = useState(true);
     const [notFound,     setNotFound]   = useState(false);
@@ -65,6 +66,7 @@ export default function Enrol() {
         intake_id:       '',
         school_level_id: '',
         class_id:        '',
+        school_id:       '',
         name:            '',
         email:           '',
         phone:           '',
@@ -79,8 +81,9 @@ export default function Enrol() {
             fetch(`/api/courses/${courseSlug}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
             fetch('/api/active-intakes').then(r => r.json()),
             fetch('/api/public-school-levels').then(r => r.json()),
+            fetch('/api/public-schools').then(r => r.json()),
         ])
-        .then(([c, i, l]) => { setCourse(c); setIntakes(i); setLevels(l); })
+        .then(([c, i, l, s]) => { setCourse(c); setIntakes(i); setLevels(l); setSchools(s); })
         .catch(() => setNotFound(true))
         .finally(() => setLoading(false));
     }, [courseSlug]);
@@ -429,9 +432,21 @@ export default function Enrol() {
                                     </Field>
                                 </div>
                                 <div>
-                                    <FLabel>Phone Number</FLabel>
+                                    <FLabel required>Phone Number</FLabel>
                                     <Field icon="fas fa-phone" error={errors.phone?.[0]}>
-                                        <input type="text" name="phone" placeholder="+254 700 000 000" value={form.phone} onChange={handle} />
+                                        <input type="text" name="phone" placeholder="+254 700 000 000" value={form.phone} onChange={handle} required />
+                                    </Field>
+                                </div>
+                                <div style={{ gridColumn: '1/-1' }}>
+                                    <FLabel required>School</FLabel>
+                                    <Field icon="fas fa-school" error={errors.school_id?.[0]}>
+                                        <select name="school_id" value={form.school_id} onChange={handle} required
+                                            style={{ outline: 'none', width: '100%', fontFamily: 'Poppins,sans-serif', fontSize: '.9rem', color: form.school_id ? '#081f4e' : '#94a3b8' }}>
+                                            <option value="">— Select your school —</option>
+                                            {schools.map(s => (
+                                                <option key={s.id} value={s.id}>{s.school_name}{s.school_location ? ` — ${s.school_location}` : ''}</option>
+                                            ))}
+                                        </select>
                                     </Field>
                                 </div>
                             </div>
@@ -524,15 +539,15 @@ export default function Enrol() {
                                             </Field>
                                         </div>
                                         <div>
-                                            <FLabel required>Sponsor Email</FLabel>
+                                            <FLabel>Sponsor Email</FLabel>
                                             <Field icon="fas fa-envelope" error={errors.sponsor_email?.[0]}>
-                                                <input type="email" name="sponsor_email" placeholder="sponsor@example.com" value={form.sponsor_email} onChange={handle} required />
+                                                <input type="email" name="sponsor_email" placeholder="sponsor@example.com" value={form.sponsor_email} onChange={handle} />
                                             </Field>
                                         </div>
                                         <div>
-                                            <FLabel>Sponsor Phone</FLabel>
+                                            <FLabel required>Sponsor Phone</FLabel>
                                             <Field icon="fas fa-phone" error={errors.sponsor_phone?.[0]}>
-                                                <input type="text" name="sponsor_phone" placeholder="+254 700 000 000" value={form.sponsor_phone} onChange={handle} />
+                                                <input type="text" name="sponsor_phone" placeholder="+254 700 000 000" value={form.sponsor_phone} onChange={handle} required />
                                             </Field>
                                         </div>
                                     </div>

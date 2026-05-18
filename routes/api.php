@@ -41,6 +41,7 @@ Route::post('/ict-club/register',       [IctClubController::class, 'store']);
 Route::get('/public-course-categories', [CourseCategoryController::class, 'publicIndex']);
 Route::get('/public-school-levels',     [SchoolLevelController::class,   'publicIndex']);
 Route::get('/public-classes',           [SchoolClassController::class,   'publicByLevel']);
+Route::get('/public-schools',           [SchoolController::class,        'publicIndex']);
 
 // Auth routes
 Route::prefix('auth')->group(function () {
