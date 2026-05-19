@@ -149,19 +149,19 @@ function DeleteModal({ role, onConfirm, onClose, loading }) {
 /* ── Permissions Modal ── */
 /* Ordered master list — determines column order in the permissions table */
 const ACTION_LABELS = {
-    view: 'View', create: 'Create', update: 'Edit', delete: 'Delete',
+    view: 'View', create: 'Create', update: 'Edit', approve: 'Approve', reject: 'Reject', delete: 'Delete',
     export: 'Export', import: 'Import', clear_all: 'Clear All',
     manage_permissions: 'Permissions', view_stats: 'View Stats',
     reset_password: 'Reset Password', manage: 'Manage', view_scores: 'View Scores',
 };
 const ACTION_ICONS = {
-    view: 'fa-eye', create: 'fa-plus-circle', update: 'fa-edit', delete: 'fa-trash-alt',
+    view: 'fa-eye', create: 'fa-plus-circle', update: 'fa-edit', approve: 'fa-check-circle', reject: 'fa-times-circle', delete: 'fa-trash-alt',
     export: 'fa-file-export', import: 'fa-file-import', clear_all: 'fa-eraser',
     manage_permissions: 'fa-key', view_stats: 'fa-chart-bar',
     reset_password: 'fa-lock', manage: 'fa-cogs', view_scores: 'fa-chart-bar',
 };
 const ACTION_COLORS = {
-    view: '#2563eb', create: '#16a34a', update: '#d97706', delete: '#dc2626',
+    view: '#2563eb', create: '#16a34a', update: '#d97706', approve: '#059669', reject: '#dc2626', delete: '#7f1d1d',
     export: '#7c3aed', import: '#0891b2', clear_all: '#be123c',
     manage_permissions: '#c2410c', view_stats: '#0f766e',
     reset_password: '#0369a1', manage: '#6d28d9', view_scores: '#7c3aed',

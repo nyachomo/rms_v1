@@ -11,6 +11,8 @@ class RolePermissionController extends Controller
 {
     /** Human-readable module names */
     public const MODULES = [
+        // Dashboard
+        'dashboard'         => 'Dashboard',
         // People
         'students'          => 'Students',
         'teachers'          => 'Teachers',
@@ -40,6 +42,8 @@ class RolePermissionController extends Controller
 
     /** Per-module allowed actions — mirrors what the UI actually supports */
     public const MODULE_ACTIONS = [
+        // Dashboard
+        'dashboard'         => ['view', 'view_stats'],
         // People
         'students'          => ['view', 'create', 'update', 'delete', 'reset_password', 'view_stats'],
         'teachers'          => ['view', 'create', 'update', 'delete', 'reset_password', 'view_stats'],
@@ -49,7 +53,7 @@ class RolePermissionController extends Controller
         'courses'           => ['view', 'create', 'update', 'delete', 'view_stats'],
         'course_categories' => ['view', 'create', 'update', 'delete', 'view_stats'],
         'intakes'           => ['view', 'create', 'update', 'delete', 'view_stats'],
-        'enrollments'       => ['view', 'update', 'delete', 'view_stats'],
+        'enrollments'       => ['view', 'create', 'update', 'approve', 'reject', 'delete', 'view_stats'],
         'student_scores'    => ['view'],
         // ICT Club
         'ict_club'          => ['view', 'update', 'delete', 'view_stats'],

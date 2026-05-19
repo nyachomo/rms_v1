@@ -119,6 +119,61 @@ class EnrollmentController extends Controller
         ], 201);
     }
 
+    /** Admin: manually enroll a student */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'course_id'       => 'required|exists:courses,id',
+            'intake_id'       => 'required|exists:intakes,id',
+            'school_level_id' => 'required|exists:school_levels,id',
+            'class_id'        => 'required|exists:school_classes,id',
+            'name'            => 'required|string|max:150',
+            'email'           => 'required|email|max:200',
+            'phone'           => 'required|string|max:30',
+            'school_id'       => 'required|exists:schools,id',
+            'sponsorship'     => 'required|in:self,guardian',
+            'sponsor_name'    => 'required_if:sponsorship,guardian|nullable|string|max:150',
+            'sponsor_email'   => 'nullable|email|max:200',
+            'sponsor_phone'   => 'required_if:sponsorship,guardian|nullable|string|max:30',
+            'status'          => 'nullable|in:pending,approved,rejected',
+        ]);
+
+        $alreadyEnrolled = Enrollment::where('email', $data['email'])
+            ->where('course_id', $data['course_id'])
+            ->exists();
+
+        if ($alreadyEnrolled) {
+            return response()->json([
+                'message' => 'This student is already enrolled in this course.',
+                'errors'  => ['email' => ['This student is already enrolled in this course.']],
+            ], 422);
+        }
+
+        $user = User::where('email', $data['email'])->first();
+        if (!$user) {
+            $studentRole = Role::whereRaw('LOWER(name) = ?', ['student'])->first();
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => Hash::make('12345678'),
+                'role_id'  => $studentRole?->id,
+                'status'   => 'active',
+            ]);
+        }
+
+        $enrollment = Enrollment::create([
+            ...$data,
+            'user_id' => $user->id,
+            'status'  => $data['status'] ?? 'approved',
+        ]);
+
+        return response()->json([
+            'success'    => true,
+            'message'    => 'Student enrolled successfully.',
+            'enrollment' => $enrollment->load('course:id,title', 'intake:id,intake_name'),
+        ], 201);
+    }
+
     /** Admin: list all enrollments */
     public function index(Request $request): JsonResponse
     {
@@ -133,14 +188,50 @@ class EnrollmentController extends Controller
             });
         }
 
-        if ($request->filled('status'))   $query->where('status',       $request->status);
-        if ($request->filled('course_id')) $query->where('course_id',   $request->course_id);
-        if ($request->filled('intake_id')) $query->where('intake_id',   $request->intake_id);
+        if ($request->filled('status'))    $query->where('status',    $request->status);
+        if ($request->filled('course_id')) $query->where('course_id', $request->course_id);
+        if ($request->filled('intake_id')) $query->where('intake_id', $request->intake_id);
+        if ($request->filled('school_id')) $query->where('school_id', $request->school_id);
 
         $perPage     = min((int) $request->get('per_page', 15), 500);
         $enrollments = $query->orderByDesc('created_at')->paginate($perPage);
 
         return response()->json($enrollments);
+    }
+
+    /** Admin: update all enrollment details */
+    public function adminUpdate(Request $request, Enrollment $enrollment): JsonResponse
+    {
+        $data = $request->validate([
+            'course_id'       => 'required|exists:courses,id',
+            'intake_id'       => 'required|exists:intakes,id',
+            'school_level_id' => 'required|exists:school_levels,id',
+            'class_id'        => 'required|exists:school_classes,id',
+            'name'            => 'required|string|max:150',
+            'email'           => 'required|email|max:200',
+            'phone'           => 'required|string|max:30',
+            'school_id'       => 'required|exists:schools,id',
+            'sponsorship'     => 'required|in:self,guardian',
+            'sponsor_name'    => 'required_if:sponsorship,guardian|nullable|string|max:150',
+            'sponsor_email'   => 'nullable|email|max:200',
+            'sponsor_phone'   => 'required_if:sponsorship,guardian|nullable|string|max:30',
+        ]);
+
+        $enrollment->update($data);
+
+        // Keep user account name/email in sync
+        if ($enrollment->user) {
+            $enrollment->user->update([
+                'name'  => $data['name'],
+                'email' => $data['email'],
+            ]);
+        }
+
+        return response()->json([
+            'success'    => true,
+            'message'    => 'Enrollment updated successfully.',
+            'enrollment' => $enrollment->fresh()->load('course:id,title', 'intake:id,intake_name'),
+        ]);
     }
 
     /** Admin: update status */

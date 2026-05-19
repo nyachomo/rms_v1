@@ -232,6 +232,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Enrollments (admin)
     Route::get('/enrollments',                      [EnrollmentController::class, 'index']);
+    Route::post('/enrollments',                     [EnrollmentController::class, 'adminStore']);
+    Route::put('/enrollments/{enrollment}',         [EnrollmentController::class, 'adminUpdate']);
     Route::patch('/enrollments/{enrollment}/status',[EnrollmentController::class, 'updateStatus']);
     Route::delete('/enrollments/{enrollment}',      [EnrollmentController::class, 'destroy']);
 

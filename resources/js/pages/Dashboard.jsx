@@ -6,6 +6,7 @@ import {
 import DashboardSidebar from '../components/DashboardSidebar';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { useAuth } from '../context/AuthContext';
+import AccessDenied from '../components/AccessDenied';
 
 const PIE_COLORS = ['#22c55e', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9'];
 
@@ -102,7 +103,7 @@ function DonutChart({ data, colors, height = 180, total, totalLabel }) {
 }
 
 export default function Dashboard() {
-    const { token } = useAuth();
+    const { token, can } = useAuth();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -117,6 +118,8 @@ export default function Dashboard() {
             .finally(() => setLoading(false));
     }, [token]);
 
+    if (!can('dashboard', 'view')) return <AccessDenied />;
+
     return (
         <div className="db-wrap">
             <DashboardSidebar />
@@ -130,20 +133,20 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {loading && (
+                    {can('dashboard', 'view_stats') && loading && (
                         <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
                             <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem' }}></i>
                             <div style={{ marginTop: 12, fontSize: '.9rem' }}>Loading dashboard…</div>
                         </div>
                     )}
 
-                    {error && (
+                    {can('dashboard', 'view_stats') && error && (
                         <div style={{ background: '#fee2e2', color: '#dc2626', padding: '14px 20px', borderRadius: 10, marginBottom: 24 }}>
                             <i className="fas fa-exclamation-circle" style={{ marginRight: 8 }}></i>{error}
                         </div>
                     )}
 
-                    {stats && <DashboardContent stats={stats} />}
+                    {can('dashboard', 'view_stats') && stats && <DashboardContent stats={stats} />}
                 </div>
             </div>
         </div>

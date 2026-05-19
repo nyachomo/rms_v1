@@ -77,7 +77,7 @@ const GROUPS = [
         icon: 'fas fa-book-reader',
         items: [
             { label: 'Browse Programs', to: '/dashboard/learning/browse',         icon: 'fas fa-graduation-cap', perm: null },
-            { label: 'My Learning',     to: '/dashboard/learning',                icon: 'fas fa-book-reader', perm: ['learning', 'view'] },
+            { label: 'My Learning',     to: '/dashboard/learning',                icon: 'fas fa-book-reader', perm: ['learning', 'view'], end: true },
             { label: 'My Scores',       to: '/dashboard/learning/scores',         icon: 'fas fa-chart-bar',   perm: ['learning', 'view_scores'] },
             { label: 'Code Playground', to: '/dashboard/learning/code-practice',  icon: 'fas fa-code',        perm: ['learning', 'view'] },
         ],
@@ -85,12 +85,20 @@ const GROUPS = [
 ];
 
 export default function DashboardSidebar() {
-    const { user, can, logout } = useAuth();
+    const { user, can, logout, token } = useAuth();
     const navigate  = useNavigate();
     const location  = useLocation();
 
     const [search, setSearch]         = useState('');
     const [openGroups, setOpenGroups] = useState({});
+    const [companyLogo, setCompanyLogo] = useState(null);
+
+    useEffect(() => {
+        fetch('/api/settings', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data?.company_logo_url) setCompanyLogo(data.company_logo_url); })
+            .catch(() => {});
+    }, [token]);
     const [collapsed, setCollapsed]   = useState(
         () => localStorage.getItem('sidebar_collapsed') === 'true'
     );
@@ -164,7 +172,12 @@ export default function DashboardSidebar() {
 
             {/* Brand */}
             <div className="db-sidebar-brand">
-                <div className="db-sidebar-icon"><i className="fas fa-laptop-code"></i></div>
+                <div className="db-sidebar-icon">
+                    {companyLogo
+                        ? <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+                        : <i className="fas fa-laptop-code"></i>
+                    }
+                </div>
                 {!collapsed && (
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <strong>Techsphere</strong>
