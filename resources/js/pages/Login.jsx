@@ -73,7 +73,7 @@ export default function Login() {
                 </form>
 
                 <p className="auth-switch">
-                    Don't have an account? <Link to="/register">Create one</Link>
+                    <Link to="/">Go to Home</Link>
                 </p>
             </div>
         </div>

@@ -33,6 +33,30 @@ const LEVEL_OPTIONS = [
 
 /* CATEGORIES is now fetched from the DB — see useCourseCategories() below */
 
+/* ══════════════ COURSE MODAL FIELD HELPERS (top-level to avoid remount on each keystroke) ══════════════ */
+function CourseField({ label, field, type = 'text', placeholder = '', span = 1, form, set, err }) {
+    return (
+        <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
+            <div className="profile-input-wrap">
+                <input type={type} value={form[field] ?? ''} onChange={e => set(field, e.target.value)} placeholder={placeholder} />
+            </div>
+            {err[field] && <span style={{ color: '#ef4444', fontSize: '.7rem' }}>{err[field][0]}</span>}
+        </div>
+    );
+}
+
+function CourseSelect({ label, field, children, span = 1, form, set }) {
+    return (
+        <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
+            <div className="profile-input-wrap" style={{ border: '1.5px solid #d1d5db', borderRadius: 8, padding: '0 10px', background: '#fff' }}>
+                <select value={form[field]} onChange={e => set(field, e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Poppins, sans-serif', fontSize: '.88rem', color: '#081f4e', padding: '8px 0', cursor: 'pointer' }}>{children}</select>
+            </div>
+        </div>
+    );
+}
+
 /* ══════════════ COURSE MODAL ══════════════ */
 function CourseModal({ course, onSave, onClose, token, categories = [] }) {
     const isEdit = !!course?.id;
@@ -75,32 +99,6 @@ function CourseModal({ course, onSave, onClose, token, categories = [] }) {
         } catch { setSaving(false); }
     };
 
-    const F = ({ label, field, type = 'text', placeholder = '', span = 1 }) => (
-        <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
-            <div className="profile-input-wrap">
-                <input type={type} value={form[field] ?? ''} onChange={e => set(field, e.target.value)} placeholder={placeholder} />
-            </div>
-            {err[field] && <span style={{ color: '#ef4444', fontSize: '.7rem' }}>{err[field][0]}</span>}
-        </div>
-    );
-
-    const Sel = ({ label, field, children, span = 1 }) => (
-        <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
-            <div className="profile-input-wrap" style={{ border: '1.5px solid #d1d5db', borderRadius: 8, padding: '0 10px', background: '#fff' }}>
-                <select value={form[field]} onChange={e => set(field, e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Poppins, sans-serif', fontSize: '.88rem', color: '#081f4e', padding: '8px 0', cursor: 'pointer' }}>{children}</select>
-            </div>
-        </div>
-    );
-
-    const TA = ({ label, field, span = 2 }) => (
-        <div style={{ gridColumn: `span ${span}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>{label}</label>
-            <RichTextEditor value={form[field] ?? ''} onChange={v => set(field, v)} />
-        </div>
-    );
-
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="modal-box" style={{ maxWidth: 1100, width: '95vw', maxHeight: '92vh', overflowY: 'auto' }}>
@@ -133,25 +131,25 @@ function CourseModal({ course, onSave, onClose, token, categories = [] }) {
                         </div>
                         {err.slug && <span style={{ color: '#ef4444', fontSize: '.7rem' }}>{err.slug[0]}</span>}
                     </div>
-                    <F label="Subtitle" field="subtitle" placeholder="Short tagline" />
-                    <Sel label="Category *" field="category">
+                    <CourseField label="Subtitle" field="subtitle" placeholder="Short tagline" form={form} set={set} err={err} />
+                    <CourseSelect label="Category *" field="category" form={form} set={set}>
                         {categories.length === 0
                             ? <option value="">Loading categories…</option>
                             : categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)
                         }
-                    </Sel>
-                    <Sel label="Level" field="level">
+                    </CourseSelect>
+                    <CourseSelect label="Level" field="level" form={form} set={set}>
                         {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value}</option>)}
-                    </Sel>
-                    <F label="Duration" field="duration" placeholder="e.g. 8 Weeks" />
-                    <F label="Price" field="price" placeholder="e.g. KES 25,000 or Contact Us" />
-                    <F label="Badge" field="badge" placeholder="e.g. Popular, Bestseller" />
-                    <F label="Icon (Font Awesome class)" field="icon" placeholder="fas fa-code" />
-                    <F label="Icon colour" field="icon_class" placeholder="orange / teal / purple / green / red / navy" />
-                    <F label="Students enrolled" field="students_count" type="number" />
-                    <F label="Rating (0–5)" field="rating" type="number" />
-                    <F label="Reviews count" field="reviews_count" type="number" />
-                    <F label="Sort order" field="sort_order" type="number" />
+                    </CourseSelect>
+                    <CourseField label="Duration" field="duration" placeholder="e.g. 8 Weeks" form={form} set={set} err={err} />
+                    <CourseField label="Price" field="price" placeholder="e.g. KES 25,000 or Contact Us" form={form} set={set} err={err} />
+                    <CourseField label="Badge" field="badge" placeholder="e.g. Popular, Bestseller" form={form} set={set} err={err} />
+                    <CourseField label="Icon (Font Awesome class)" field="icon" placeholder="fas fa-code" form={form} set={set} err={err} />
+                    <CourseField label="Icon colour" field="icon_class" placeholder="orange / teal / purple / green / red / navy" form={form} set={set} err={err} />
+                    <CourseField label="Students enrolled" field="students_count" type="number" form={form} set={set} err={err} />
+                    <CourseField label="Rating (0–5)" field="rating" type="number" form={form} set={set} err={err} />
+                    <CourseField label="Reviews count" field="reviews_count" type="number" form={form} set={set} err={err} />
+                    <CourseField label="Sort order" field="sort_order" type="number" form={form} set={set} err={err} />
                     <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>Tags (comma-separated)</label>
                         <div className="profile-input-wrap">
@@ -177,10 +175,10 @@ function CourseModal({ course, onSave, onClose, token, categories = [] }) {
                         <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>Full overview (course detail page)</label>
                         <RichTextEditor value={form.overview || ''} onChange={v => set('overview', v)} placeholder="Detailed overview shown on the course detail page…" minHeight={140} />
                     </div>
-                    <Sel label="Status" field="status">
+                    <CourseSelect label="Status" field="status" form={form} set={set}>
                         <option value="active">Active</option>
                         <option value="archived">Archived</option>
-                    </Sel>
+                    </CourseSelect>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid #f0f2f5', padding: '16px 24px' }}>
                     <button className="btn-modal-cancel" onClick={onClose}>Cancel</button>

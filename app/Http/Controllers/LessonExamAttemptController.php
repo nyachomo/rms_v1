@@ -55,6 +55,7 @@ class LessonExamAttemptController extends Controller
             'pass_mark'          => $lesson->pass_mark,
             'time_limit_minutes' => $lesson->time_limit_minutes,
             'questions'          => $questions,
+            'attempts_count'     => $attemptsCount,
             'best_attempt'       => $bestAttempt ? [
                 'score'          => (float) $bestAttempt->score,
                 'passed'         => $bestAttempt->passed,
@@ -88,7 +89,19 @@ class LessonExamAttemptController extends Controller
             return response()->json(['message' => 'No questions found for this exam.'], 422);
         }
 
-        $userId       = Auth::id();
+        $userId = Auth::id();
+
+        // Enforce one-attempt-only rule
+        $existingAttempts = LessonExamAttempt::where('user_id', $userId)
+            ->where('lesson_id', $lesson->id)
+            ->count();
+
+        if ($existingAttempts >= 1) {
+            return response()->json([
+                'message' => 'You have already used your one attempt for this exam. Retakes are not permitted.',
+            ], 422);
+        }
+
         $correctCount = 0;
         $results      = [];
 

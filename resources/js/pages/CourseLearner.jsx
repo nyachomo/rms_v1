@@ -95,8 +95,20 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
             if (!document.fullscreenElement) recordViolation('fullscreen exited');
         };
         const onBeforeUnload = (e) => {
-            e.preventDefault();
-            e.returnValue = 'Your exam is in progress. Leaving will submit your current answers.';
+            if (!resultRef.current && startedRef.current) {
+                e.preventDefault();
+                e.returnValue = 'Your exam is in progress. If you leave, your answers will be auto-submitted and you cannot retake this exam.';
+            }
+        };
+        const onPageHide = (e) => {
+            if (!e.persisted && startedRef.current && !resultRef.current) {
+                fetch(`/api/learning/lessons/${lesson.id}/exam/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ answers: submitRef.current ?? {} }),
+                    keepalive: true,
+                });
+            }
         };
         const onKeyDown = (e) => {
             // Block common shortcuts that open new tabs/windows or dev-tools
@@ -114,6 +126,7 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
         window.addEventListener('blur', onBlur);
         document.addEventListener('fullscreenchange', onFullscreenChange);
         window.addEventListener('beforeunload', onBeforeUnload);
+        window.addEventListener('pagehide', onPageHide);
         document.addEventListener('keydown', onKeyDown, true);
         document.addEventListener('contextmenu', onContextMenu);
 
@@ -122,6 +135,7 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
             window.removeEventListener('blur', onBlur);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
             window.removeEventListener('beforeunload', onBeforeUnload);
+            window.removeEventListener('pagehide', onPageHide);
             document.removeEventListener('keydown', onKeyDown, true);
             document.removeEventListener('contextmenu', onContextMenu);
             // Exit fullscreen when exam ends/closes
@@ -264,7 +278,7 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                                 <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '1.05rem', color: timerCritical ? '#fca5a5' : '#fff', letterSpacing: '.05em' }}>{fmtTime(timeLeft)}</span>
                             </div>
                         )}
-                        {!result && (
+                        {!result && !started && (
                             <button onClick={onClose} style={{ background: 'rgba(255,255,255,.12)', border: 'none', color: '#fff', width: 30, height: 30, borderRadius: 8, cursor: 'pointer', fontSize: '.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <i className="fas fa-times"></i>
                             </button>
@@ -344,6 +358,32 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                                 </div>
                             )}
                         </div>
+                    ) : examData?.attempts_count >= 1 ? (
+                        /* ── Already attempted — locked screen ── */
+                        <div style={{ textAlign: 'center', padding: '28px 16px' }}>
+                            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#fee2e2,#fecaca)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(220,38,38,.18)' }}>
+                                <i className="fas fa-lock" style={{ fontSize: '1.8rem', color: '#dc2626' }}></i>
+                            </div>
+                            <h3 style={{ color: '#7f1d1d', fontFamily: 'Poppins,sans-serif', margin: '0 0 8px', fontSize: '1.05rem' }}>Exam Already Attempted</h3>
+                            <p style={{ color: '#991b1b', fontSize: '.84rem', lineHeight: 1.6, marginBottom: 20 }}>
+                                You have used your one attempt for this exam. Retakes are not permitted.
+                            </p>
+                            {examData?.best_attempt && (
+                                <div style={{ background: examData.best_attempt.passed ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)', borderRadius: 14, border: `2px solid ${examData.best_attempt.passed ? '#86efac' : '#fca5a5'}`, padding: '20px 24px', marginBottom: 16 }}>
+                                    <div style={{ fontSize: '2.4rem', fontWeight: 800, color: examData.best_attempt.passed ? '#16a34a' : '#dc2626', fontFamily: 'Poppins,sans-serif', lineHeight: 1 }}>{examData.best_attempt.score}%</div>
+                                    <div style={{ fontSize: '.82rem', color: examData.best_attempt.passed ? '#15803d' : '#b91c1c', fontWeight: 600, marginTop: 6 }}>
+                                        {examData.best_attempt.passed ? 'You passed this exam.' : `Not passed — pass mark is ${examData.pass_mark}%.`}
+                                    </div>
+                                    <div style={{ fontSize: '.73rem', color: '#6b7280', marginTop: 4 }}>Attempt #{examData.best_attempt.attempts_count}</div>
+                                </div>
+                            )}
+                            <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'flex-start', textAlign: 'left' }}>
+                                <i className="fas fa-info-circle" style={{ color: '#d97706', flexShrink: 0, marginTop: 2 }}></i>
+                                <p style={{ margin: 0, fontSize: '.78rem', color: '#92400e', lineHeight: 1.6 }}>
+                                    Contact your instructor or administrator if you need a retake to be granted.
+                                </p>
+                            </div>
+                        </div>
                     ) : !started ? (
                         /* ── Pre-exam start screen ── */
                         <div style={{ padding: '8px 0' }}>
@@ -400,6 +440,12 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                                     <i className="fas fa-exclamation-circle" style={{ color: '#b91c1c', flexShrink: 0 }}></i>
                                     <span style={{ fontSize: '.78rem', color: '#7f1d1d', fontWeight: 700 }}>
                                         After <strong>{MAX_VIOLATIONS} violations</strong> your exam will be auto-submitted immediately.
+                                    </span>
+                                </div>
+                                <div style={{ marginTop: 8, paddingLeft: 28, background: '#fdf2f8', border: '1px solid #f0abfc', borderRadius: 8, padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                                    <i className="fas fa-ban" style={{ color: '#a21caf', flexShrink: 0, fontSize: '.85rem' }}></i>
+                                    <span style={{ fontSize: '.78rem', color: '#701a75', fontWeight: 700 }}>
+                                        This exam allows <strong>one attempt only</strong>. You cannot retake it once you begin.
                                     </span>
                                 </div>
                             </div>
@@ -461,22 +507,22 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                 </div>
 
                 {/* Footer */}
-                <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', background: '#fafbfc', display: 'flex', gap: 10, justifyContent: result ? 'center' : 'flex-end', flexShrink: 0 }}>
-                    {result ? (
+                <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', background: '#fafbfc', display: 'flex', gap: 10, justifyContent: 'center', flexShrink: 0 }}>
+                    {!loading && examData?.attempts_count >= 1 && !result ? (
+                        <button onClick={onClose}
+                            style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#374151,#4b5563)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <i className="fas fa-times"></i> Close
+                        </button>
+                    ) : result ? (
                         result.passed ? (
                             <button onClick={onClose}
                                 style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <i className="fas fa-arrow-right"></i> Continue to Next Lesson
                             </button>
                         ) : (
-                            <button onClick={() => {
-                                setResult(null); setAnswers({}); setTimedOut(false);
-                                setStarted(false); setViolations(0); violationsRef.current = 0;
-                                setViolationAlert(null); setFinalCountdown(null);
-                                if (examData?.time_limit_minutes) setTimeLeft(examData.time_limit_minutes * 60);
-                            }}
-                                style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <i className="fas fa-redo"></i> Try Again
+                            <button onClick={onClose}
+                                style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#374151,#4b5563)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <i className="fas fa-times"></i> Close
                             </button>
                         )
                     ) : !started ? (
@@ -813,15 +859,28 @@ export default function CourseLearner() {
                                             <i className="fas fa-clipboard-list" style={{ color: '#fff', fontSize: '1rem' }}></i>
                                         </div>
                                         <div style={{ flex: 1 }}>
-                                            <p style={{ margin: '0 0 3px', fontWeight: 800, color: '#92400e', fontFamily: 'Poppins,sans-serif', fontSize: '.9rem' }}>Lesson Exam Required</p>
-                                            <p style={{ margin: 0, fontSize: '.8rem', color: '#a16207' }}>Score at least <strong>{lesson.pass_mark}%</strong> to unlock the next lesson.</p>
+                                            <p style={{ margin: '0 0 3px', fontWeight: 800, color: '#92400e', fontFamily: 'Poppins,sans-serif', fontSize: '.9rem' }}>
+                                                {lesson.exam_attempted ? 'Exam Locked — Already Attempted' : 'Lesson Exam Required'}
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '.8rem', color: '#a16207' }}>
+                                                {lesson.exam_attempted
+                                                    ? 'You have used your one attempt. Contact your instructor for a retake.'
+                                                    : <>Score at least <strong>{lesson.pass_mark}%</strong> to unlock the next lesson.</>}
+                                            </p>
                                         </div>
-                                        <button onClick={() => setExamOpen(true)}
-                                            style={{ padding: '10px 22px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.84rem', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(217,119,6,.35)', flexShrink: 0, transition: 'opacity .2s' }}
-                                            onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
-                                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                                            <i className="fas fa-play-circle"></i> Take Exam
-                                        </button>
+                                        {lesson.exam_attempted ? (
+                                            <button onClick={() => setExamOpen(true)}
+                                                style={{ padding: '10px 22px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#6b7280,#4b5563)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.84rem', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                                <i className="fas fa-lock"></i> View Score
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => setExamOpen(true)}
+                                                style={{ padding: '10px 22px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.84rem', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(217,119,6,.35)', flexShrink: 0, transition: 'opacity .2s' }}
+                                                onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
+                                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                                                <i className="fas fa-play-circle"></i> Take Exam
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -837,10 +896,17 @@ export default function CourseLearner() {
                                     <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 9, flexWrap: 'wrap' }}>
                                         {!lesson.completed ? (
                                             lesson.has_exam && !lesson.exam_passed ? (
-                                                <button onClick={() => setExamOpen(true)}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 4px 16px rgba(217,119,6,.35)', transition: 'opacity .2s' }}>
-                                                    <i className="fas fa-clipboard-list"></i> Take Exam to Complete
-                                                </button>
+                                                lesson.exam_attempted ? (
+                                                    <button onClick={() => setExamOpen(true)}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, border: '1.5px solid #d1d5db', background: '#f3f4f6', color: '#6b7280', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.85rem' }}>
+                                                        <i className="fas fa-lock"></i> Exam Locked (View Score)
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => setExamOpen(true)}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.85rem', boxShadow: '0 4px 16px rgba(217,119,6,.35)', transition: 'opacity .2s' }}>
+                                                        <i className="fas fa-clipboard-list"></i> Take Exam to Complete
+                                                    </button>
+                                                )
                                             ) : (
                                                 <>
                                                     <button onClick={() => toggleComplete(false)} disabled={completing}

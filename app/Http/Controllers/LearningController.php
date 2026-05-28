@@ -163,16 +163,24 @@ class LearningController extends Controller
             ->unique()
             ->toArray();
 
+        // Lessons where this student has ANY attempt (for one-attempt-only enforcement)
+        $attemptedLessonIds = LessonExamAttempt::where('user_id', $userId)
+            ->whereIn('lesson_id', $allLessonIds)
+            ->pluck('lesson_id')
+            ->unique()
+            ->toArray();
+
         $modules = $modules->map(fn($m) => [
             'id'          => $m->id,
             'title'       => $m->title,
             'description' => $m->description,
             'sort_order'  => $m->sort_order,
             'lessons'     => $m->lessons->map(fn($l) => array_merge($l->toArray(), [
-                'completed'   => in_array($l->id, $completedIds),
+                'completed'      => in_array($l->id, $completedIds),
                 // has_exam = pass_mark is set AND at least one question exists
-                'has_exam'    => !is_null($l->pass_mark) && ($examQuestionCounts[$l->id] ?? 0) > 0,
-                'exam_passed' => in_array($l->id, $passedLessonIds),
+                'has_exam'       => !is_null($l->pass_mark) && ($examQuestionCounts[$l->id] ?? 0) > 0,
+                'exam_passed'    => in_array($l->id, $passedLessonIds),
+                'exam_attempted' => in_array($l->id, $attemptedLessonIds),
             ])),
         ]);
 
