@@ -35,6 +35,25 @@ class UserController extends Controller
         return response()->json($query->orderBy('name')->paginate($perPage));
     }
 
+    public function suspend(Request $request, User $user): JsonResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return response()->json(['message' => 'You cannot suspend your own account.'], 422);
+        }
+
+        $user->tokens()->delete();
+        $user->update(['status' => 'suspended']);
+
+        return response()->json(['user' => $this->resource($user->fresh())]);
+    }
+
+    public function unsuspend(User $user): JsonResponse
+    {
+        $user->update(['status' => 'active']);
+
+        return response()->json(['user' => $this->resource($user->fresh())]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -42,7 +61,7 @@ class UserController extends Controller
             'email'    => 'required|email|max:200|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)],
             'role_id'  => 'nullable|exists:roles,id',
-            'status'   => 'in:active,inactive',
+            'status'   => 'in:active,inactive,suspended',
         ]);
 
         $data['status']   ??= 'active';
@@ -60,7 +79,7 @@ class UserController extends Controller
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|max:200|unique:users,email,' . $user->id,
             'role_id'  => 'nullable|exists:roles,id',
-            'status'   => 'required|in:active,inactive',
+            'status'   => 'required|in:active,inactive,suspended',
             'password' => ['nullable', 'confirmed', Password::min(8)],
         ]);
 
@@ -74,6 +93,18 @@ class UserController extends Controller
         $user->load('role');
 
         return response()->json(['user' => $this->resource($user->fresh())]);
+    }
+
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return response()->json(['message' => 'Use the profile page to change your own password.'], 422);
+        }
+
+        $user->update(['password' => Hash::make('12345678')]);
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Password reset to default successfully.']);
     }
 
     public function destroy(Request $request, User $user): JsonResponse

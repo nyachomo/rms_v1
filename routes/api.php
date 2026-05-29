@@ -90,10 +90,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/school-levels/{schoolLevel}', [SchoolLevelController::class, 'destroy']);
 
     // Users
-    Route::get('/users',           [UserController::class, 'index']);
-    Route::post('/users',          [UserController::class, 'store']);
-    Route::put('/users/{user}',    [UserController::class, 'update']);
-    Route::delete('/users/{user}', [UserController::class, 'destroy']);
+    Route::get('/users',                        [UserController::class, 'index']);
+    Route::post('/users',                       [UserController::class, 'store']);
+    Route::put('/users/{user}',                 [UserController::class, 'update']);
+    Route::delete('/users/{user}',              [UserController::class, 'destroy']);
+    Route::post('/users/{user}/suspend',         [UserController::class, 'suspend']);
+    Route::post('/users/{user}/unsuspend',       [UserController::class, 'unsuspend']);
+    Route::post('/users/{user}/reset-password',  [UserController::class, 'resetPassword']);
 
     // Roles
     Route::get('/roles',                        [RoleController::class, 'index']);

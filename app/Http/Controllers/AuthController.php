@@ -57,7 +57,15 @@ class AuthController extends Controller
             ]);
         }
 
-        $user  = Auth::user();
+        $user = Auth::user();
+
+        if ($user->status === 'suspended') {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => ['Your account has been suspended. Please contact the administrator.'],
+            ]);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -75,6 +83,12 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
+
+        if ($user->status === 'suspended') {
+            $user->tokens()->delete();
+            return response()->json(['message' => 'Your account has been suspended.', 'suspended' => true], 403);
+        }
+
         return response()->json([
             'user' => $this->userResource($user),
         ]);

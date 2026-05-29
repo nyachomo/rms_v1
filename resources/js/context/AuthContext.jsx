@@ -13,6 +13,15 @@ export function AuthProvider({ children }) {
             const res = await fetch('/api/auth/me', {
                 headers: { Authorization: `Bearer ${currentToken}`, Accept: 'application/json' },
             });
+            if (res.status === 403) {
+                const data = await res.json().catch(() => ({}));
+                if (data.suspended) {
+                    localStorage.removeItem('auth_token');
+                    setToken(null);
+                    setUser(null);
+                    return;
+                }
+            }
             if (!res.ok) throw new Error('unauthorized');
             const data = await res.json();
             setUser(data.user);

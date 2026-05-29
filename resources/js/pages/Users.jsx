@@ -181,6 +181,84 @@ function UserModal({ userData, onSave, onClose, token, roles }) {
     );
 }
 
+/* ── Reset Password Modal ── */
+function ResetPasswordModal({ userData, onConfirm, onClose, loading }) {
+    return (
+        <div className="db-modal-overlay" onClick={onClose}>
+            <div className="db-modal" style={{ maxWidth:420, position:'relative' }} onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} style={{ position:'absolute', top:14, right:14, zIndex:10, width:32, height:32, borderRadius:'50%', background:'#f3f4f6', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.9rem', color:'#666' }}>
+                    <i className="fas fa-times"></i>
+                </button>
+                <div className="db-modal-header">
+                    <h3 style={{ color:'#2563eb' }}><i className="fas fa-key"></i> Reset Password</h3>
+                </div>
+                <div style={{ padding:'24px 28px' }}>
+                    <p style={{ color:'#374151', marginBottom:8 }}>
+                        Reset <strong>{userData.name}</strong>'s password to the default?
+                    </p>
+                    <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:8, padding:'10px 14px', marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
+                        <i className="fas fa-info-circle" style={{ color:'#2563eb' }}></i>
+                        <span style={{ fontSize:'.88rem', color:'#1e40af' }}>New password will be <strong>12345678</strong>. Their active sessions will be revoked.</span>
+                    </div>
+                </div>
+                <div className="db-modal-actions">
+                    <button className="db-btn-secondary" onClick={onClose}>Cancel</button>
+                    <button
+                        style={{ background:'#2563eb', color:'#fff', border:'none', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontWeight:600, display:'flex', alignItems:'center', gap:7, opacity: loading ? .7 : 1 }}
+                        onClick={onConfirm} disabled={loading}>
+                        {loading
+                            ? <><i className="fas fa-circle-notch fa-spin"></i> Resetting…</>
+                            : <><i className="fas fa-key"></i> Yes, Reset Password</>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ── Suspend Modal ── */
+function SuspendModal({ userData, onConfirm, onClose, loading }) {
+    const isSuspended = userData.status === 'suspended';
+    return (
+        <div className="db-modal-overlay" onClick={onClose}>
+            <div className="db-modal" style={{ maxWidth:420, position:'relative' }} onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} style={{ position:'absolute', top:14, right:14, zIndex:10, width:32, height:32, borderRadius:'50%', background:'#f3f4f6', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.9rem', color:'#666' }}>
+                    <i className="fas fa-times"></i>
+                </button>
+                <div className="db-modal-header">
+                    <h3 style={{ color: isSuspended ? '#16a34a' : '#d97706' }}>
+                        <i className={`fas fa-${isSuspended ? 'lock-open' : 'ban'}`}></i>{' '}
+                        {isSuspended ? 'Unsuspend User' : 'Suspend User'}
+                    </h3>
+                </div>
+                <div style={{ padding:'24px 28px' }}>
+                    <p style={{ color:'#374151', marginBottom:8 }}>
+                        {isSuspended
+                            ? <>Restore access for <strong>{userData.name}</strong>? Their account will become active again.</>
+                            : <>Suspend <strong>{userData.name}</strong>? They will be immediately logged out and blocked from logging in.</>
+                        }
+                    </p>
+                    {!isSuspended && (
+                        <p style={{ color:'#9ca3af', fontSize:'.9rem' }}>All active sessions and tokens will be revoked instantly.</p>
+                    )}
+                </div>
+                <div className="db-modal-actions">
+                    <button className="db-btn-secondary" onClick={onClose}>Cancel</button>
+                    <button
+                        style={{ background: isSuspended ? '#16a34a' : '#d97706', color:'#fff', border:'none', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontWeight:600, display:'flex', alignItems:'center', gap:7, opacity: loading ? .7 : 1 }}
+                        onClick={onConfirm} disabled={loading}>
+                        {loading
+                            ? <><i className="fas fa-circle-notch fa-spin"></i> {isSuspended ? 'Restoring…' : 'Suspending…'}</>
+                            : <><i className={`fas fa-${isSuspended ? 'lock-open' : 'ban'}`}></i> {isSuspended ? 'Yes, Restore' : 'Yes, Suspend'}</>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /* ── Delete Modal ── */
 function DeleteModal({ userData, onConfirm, onClose, loading }) {
     return (
@@ -222,11 +300,15 @@ export default function Users() {
     const [page, setPage]             = useState(1);
     const [fetching, setFetching]     = useState(false);
 
-    const [toast, setToast]             = useState(null);
-    const [addModal, setAddModal]       = useState(false);
-    const [editUser, setEditUser]       = useState(null);
-    const [deleteUser, setDeleteUser]   = useState(null);
-    const [deleteLoading, setDeleting]  = useState(false);
+    const [toast, setToast]               = useState(null);
+    const [addModal, setAddModal]         = useState(false);
+    const [editUser, setEditUser]         = useState(null);
+    const [deleteUser, setDeleteUser]     = useState(null);
+    const [deleteLoading, setDeleting]    = useState(false);
+    const [suspendUser, setSuspendUser]         = useState(null);
+    const [suspendLoading, setSuspending]       = useState(false);
+    const [resetPwdUser, setResetPwdUser]       = useState(null);
+    const [resetPwdLoading, setResetPwdLoading] = useState(false);
 
     const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) : '?';
 
@@ -289,6 +371,45 @@ export default function Users() {
             setToast({ message: 'Failed to delete user.', type: 'error' });
         } finally {
             setDeleting(false);
+        }
+    };
+
+    const confirmSuspend = async () => {
+        setSuspending(true);
+        const isSuspended = suspendUser.status === 'suspended';
+        const endpoint = isSuspended ? 'unsuspend' : 'suspend';
+        try {
+            const res  = await fetch(`/api/users/${suspendUser.id}/${endpoint}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            });
+            const data = await res.json();
+            if (!res.ok) { setToast({ message: data.message || 'Action failed.', type: 'error' }); return; }
+            setSuspendUser(null);
+            fetchUsers();
+            setToast({ message: isSuspended ? `${suspendUser.name}'s account restored.` : `${suspendUser.name}'s account suspended.`, type: 'success' });
+        } catch {
+            setToast({ message: 'Action failed.', type: 'error' });
+        } finally {
+            setSuspending(false);
+        }
+    };
+
+    const confirmResetPassword = async () => {
+        setResetPwdLoading(true);
+        try {
+            const res  = await fetch(`/api/users/${resetPwdUser.id}/reset-password`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            });
+            const data = await res.json();
+            if (!res.ok) { setToast({ message: data.message || 'Reset failed.', type: 'error' }); return; }
+            setResetPwdUser(null);
+            setToast({ message: `${resetPwdUser.name}'s password reset to default.`, type: 'success' });
+        } catch {
+            setToast({ message: 'Reset failed.', type: 'error' });
+        } finally {
+            setResetPwdLoading(false);
         }
     };
 
@@ -376,6 +497,15 @@ export default function Users() {
                                 <div className="schools-stat-label">Inactive (this page)</div>
                             </div>
                         </div>
+                        <div className="schools-stat-card">
+                            <div className="schools-stat-icon" style={{ background:'linear-gradient(135deg,#f59e0b,#b45309)' }}>
+                                <i className="fas fa-ban"></i>
+                            </div>
+                            <div>
+                                <div className="schools-stat-value">{users.filter(u => u.status === 'suspended').length}</div>
+                                <div className="schools-stat-label">Suspended (this page)</div>
+                            </div>
+                        </div>
                     </div>}
 
                     {/* Filters */}
@@ -389,6 +519,7 @@ export default function Users() {
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
                         </select>
                         <select className="db-filter-select" value={roleFilter} onChange={handleRole}>
                             <option value="">All Roles</option>
@@ -452,10 +583,15 @@ export default function Users() {
                                                 }
                                             </td>
                                             <td>
-                                                <span className={`db-status-badge ${u.status === 'active' ? 'db-status-active' : 'db-status-inactive'}`}>
-                                                    <i className={`fas fa-${u.status === 'active' ? 'check-circle' : 'times-circle'}`}></i>
-                                                    {u.status === 'active' ? 'Active' : 'Inactive'}
-                                                </span>
+                                                {u.status === 'suspended'
+                                                    ? <span className="db-status-badge" style={{ background:'#fffbeb', color:'#92400e', border:'1px solid #fcd34d', borderRadius:20, padding:'3px 10px', fontSize:'.78rem', fontWeight:600, display:'inline-flex', alignItems:'center', gap:5 }}>
+                                                        <i className="fas fa-ban"></i> Suspended
+                                                      </span>
+                                                    : <span className={`db-status-badge ${u.status === 'active' ? 'db-status-active' : 'db-status-inactive'}`}>
+                                                        <i className={`fas fa-${u.status === 'active' ? 'check-circle' : 'times-circle'}`}></i>
+                                                        {u.status === 'active' ? 'Active' : 'Inactive'}
+                                                      </span>
+                                                }
                                             </td>
                                             <td style={{ color:'#9ca3af', fontSize:'.85rem' }}>
                                                 {new Date(u.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
@@ -465,6 +601,24 @@ export default function Users() {
                                                     {can('users', 'update') && (
                                                         <button className="db-action-btn db-action-edit" title="Edit" onClick={() => setEditUser(u)}>
                                                             <i className="fas fa-edit"></i>
+                                                        </button>
+                                                    )}
+                                                    {can('users', 'update') && (
+                                                        <button
+                                                            title="Reset Password to Default"
+                                                            disabled={isSelf}
+                                                            onClick={() => !isSelf && setResetPwdUser(u)}
+                                                            style={{ background:'none', border:'1px solid #2563eb', borderRadius:6, width:30, height:30, cursor: isSelf ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.82rem', opacity: isSelf ? .35 : 1, color:'#2563eb' }}>
+                                                            <i className="fas fa-key"></i>
+                                                        </button>
+                                                    )}
+                                                    {can('users', 'update') && (
+                                                        <button
+                                                            title={u.status === 'suspended' ? 'Unsuspend' : 'Suspend'}
+                                                            disabled={isSelf}
+                                                            onClick={() => !isSelf && setSuspendUser(u)}
+                                                            style={{ background:'none', border:'1px solid', borderRadius:6, width:30, height:30, cursor: isSelf ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.82rem', opacity: isSelf ? .35 : 1, borderColor: u.status === 'suspended' ? '#16a34a' : '#d97706', color: u.status === 'suspended' ? '#16a34a' : '#d97706' }}>
+                                                            <i className={`fas fa-${u.status === 'suspended' ? 'lock-open' : 'ban'}`}></i>
                                                         </button>
                                                     )}
                                                     {can('users', 'delete') && (
@@ -491,9 +645,11 @@ export default function Users() {
             </div>
 
             {/* Modals */}
-            {addModal   && <UserModal token={token} roles={roles} onSave={onSaved} onClose={() => setAddModal(false)} />}
-            {editUser   && <UserModal userData={editUser} token={token} roles={roles} onSave={onSaved} onClose={() => setEditUser(null)} />}
-            {deleteUser && <DeleteModal userData={deleteUser} loading={deleteLoading} onConfirm={confirmDelete} onClose={() => setDeleteUser(null)} />}
+            {addModal    && <UserModal token={token} roles={roles} onSave={onSaved} onClose={() => setAddModal(false)} />}
+            {editUser    && <UserModal userData={editUser} token={token} roles={roles} onSave={onSaved} onClose={() => setEditUser(null)} />}
+            {deleteUser  && <DeleteModal userData={deleteUser} loading={deleteLoading} onConfirm={confirmDelete} onClose={() => setDeleteUser(null)} />}
+            {suspendUser  && <SuspendModal userData={suspendUser} loading={suspendLoading} onConfirm={confirmSuspend} onClose={() => setSuspendUser(null)} />}
+            {resetPwdUser && <ResetPasswordModal userData={resetPwdUser} loading={resetPwdLoading} onConfirm={confirmResetPassword} onClose={() => setResetPwdUser(null)} />}
         </div>
     );
 }
