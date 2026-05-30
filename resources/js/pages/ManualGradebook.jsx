@@ -155,23 +155,15 @@ export default function ManualGradebook() {
         ...(body ? { body: JSON.stringify(body) } : {}),
     }), [token]);
 
-    /* Load courses + derive categories */
+    /* Load categories and courses in parallel — categories from their own table */
     useEffect(() => {
-        fetch('/api/manual-gradebook/courses', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
-            .then(r => r.json())
-            .then(list => {
-                const arr = Array.isArray(list) ? list : [];
-                setCourses(arr);
-                const seen = new Map();
-                arr.forEach(c => {
-                    if (c.course_category && !seen.has(c.course_category.id)) {
-                        seen.set(c.course_category.id, c.course_category);
-                    }
-                });
-                setCategories([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
-            })
-            .catch(() => [])
-            .finally(() => setLC(false));
+        Promise.all([
+            fetch('/api/public-course-categories', { headers: { Accept: 'application/json' } }).then(r => r.json()).catch(() => []),
+            fetch('/api/manual-gradebook/courses', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }).then(r => r.json()).catch(() => []),
+        ]).then(([cats, courses]) => {
+            setCategories(Array.isArray(cats) ? cats.sort((a, b) => a.name.localeCompare(b.name)) : []);
+            setCourses(Array.isArray(courses) ? courses : []);
+        }).finally(() => setLC(false));
     }, [token]);
 
     const loadGrid = useCallback(() => {

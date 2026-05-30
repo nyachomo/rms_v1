@@ -524,22 +524,16 @@ function AdminScoresInner({ token }) {
     const [toast, setToast]                 = useState(null);
 
     useEffect(() => {
-        fetch('/api/admin/scores/courses', {
-            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
-            .then(r => r.json())
-            .then(list => {
-                setCourses(list);
-                // Derive unique categories from the course list
-                const seen = new Map();
-                list.forEach(c => {
-                    if (c.course_category && !seen.has(c.course_category.id)) {
-                        seen.set(c.course_category.id, c.course_category);
-                    }
-                });
-                setCategories([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
-            })
-            .finally(() => setLCourses(false));
+        // Fetch categories and courses in parallel — categories from their own table, not derived
+        Promise.all([
+            fetch('/api/public-course-categories', { headers: { Accept: 'application/json' } }).then(r => r.json()).catch(() => []),
+            fetch('/api/admin/scores/courses', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }).then(r => r.json()).catch(() => []),
+        ]).then(([cats, courses]) => {
+            const catList = Array.isArray(cats) ? cats : [];
+            const crsList = Array.isArray(courses) ? courses : [];
+            setCategories(catList.sort((a, b) => a.name.localeCompare(b.name)));
+            setCourses(crsList);
+        }).finally(() => setLCourses(false));
     }, [token]);
 
     useEffect(() => {
