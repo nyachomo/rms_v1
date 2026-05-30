@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Course extends Model
 {
@@ -17,6 +18,11 @@ class Course extends Model
         'tags'   => 'array',
         'rating' => 'float',
     ];
+
+    public function courseCategory(): BelongsTo
+    {
+        return $this->belongsTo(CourseCategory::class, 'category_id');
+    }
 
     public function outcomes()
     {
@@ -41,5 +47,10 @@ class Course extends Model
     public function modules()
     {
         return $this->hasMany(CourseModule::class)->orderBy('sort_order');
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(CourseAssessment::class)->orderBy('sort_order');
     }
 }

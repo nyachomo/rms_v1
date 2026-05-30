@@ -261,7 +261,7 @@ function ExamModal({ lesson, token, onClose }) {
             <div className="modal-box" style={{ maxWidth: 1100, width: '95vw', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
 
                 {/* Header */}
-                <div style={{ background: 'linear-gradient(135deg,#0f766e,#0d9488)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '.95rem' }}>
                             <i className="fas fa-clipboard-list"></i>

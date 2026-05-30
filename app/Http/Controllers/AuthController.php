@@ -247,6 +247,41 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Step 1 — verify the email exists in the system before allowing a reset.
+     */
+    public function verifyResetEmail(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => ['No account found with that email address.'],
+            ]);
+        }
+
+        return response()->json(['message' => 'Email verified. You may now reset your password.']);
+    }
+
+    /**
+     * Step 2 — reset the password for the given email (no token required).
+     */
+    public function resetForgottenPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email'    => 'required|email|exists:users,email',
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        $user = User::where('email', $request->email)->firstOrFail();
+        $user->update(['password' => Hash::make($request->password)]);
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Password reset successfully. You may now log in.']);
+    }
+
     // Builds the HttpOnly cookie that carries the Sanctum token.
     // Apache never strips cookies, so FixAuthorizationHeader can always read it
     // on cPanel even when the Authorization header gets stripped.

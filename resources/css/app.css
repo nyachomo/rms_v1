@@ -1942,84 +1942,213 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
 .db-logout-btn { color: rgba(239,68,68,.8) !important; width: 100%; }
 .db-logout-btn:hover { background: rgba(239,68,68,.15) !important; color: #ef4444 !important; }
 
-/* ===== AUTH PAGES ===== */
-.auth-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #081f4e 0%, #0d2d6b 60%, #1a1a4e 100%);
+/* ===== AUTH PAGES — SPLIT LAYOUT ===== */
+.auth-split {
+  min-height: 100vh; display: flex;
+}
+
+/* ── Left branding panel ── */
+.auth-panel-left {
+  flex: 0 0 52%; position: relative; overflow: hidden;
+  background: linear-gradient(145deg, #081f4e 0%, #0d2d6b 55%, #1a1a4e 100%);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 60px 48px;
+}
+.auth-panel-deco {
+  position: absolute; border-radius: 50%;
+  background: rgba(254,115,12,.12); pointer-events: none;
+}
+.auth-panel-deco-1 { width: 480px; height: 480px; top: -140px; left: -140px; }
+.auth-panel-deco-2 { width: 320px; height: 320px; bottom: -80px; right: -80px; background: rgba(254,115,12,.08); }
+.auth-panel-deco-3 { width: 180px; height: 180px; top: 45%; left: 68%; background: rgba(255,255,255,.04); }
+.auth-panel-body   { position: relative; z-index: 2; text-align: center; max-width: 380px; }
+.auth-panel-logo-wrap {
+  width: 100px; height: 100px; border-radius: 50%; overflow: hidden;
+  margin: 0 auto 28px;
+  border: 3px solid rgba(254,115,12,.6);
+  box-shadow: 0 0 0 8px rgba(254,115,12,.12), 0 16px 48px rgba(0,0,0,.4);
+}
+.auth-panel-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.auth-panel-title {
+  font-family: 'Poppins', sans-serif; font-size: 1.75rem; font-weight: 800;
+  color: #fff; margin-bottom: 12px; letter-spacing: -.3px;
+}
+.auth-panel-sub {
+  font-family: 'Poppins', sans-serif; font-size: .95rem; color: rgba(255,255,255,.65);
+  line-height: 1.7; margin-bottom: 36px;
+}
+.auth-panel-pills {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+}
+.auth-panel-pills span {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.85); border-radius: 20px;
+  padding: 6px 14px; font-size: .78rem; font-family: 'Poppins', sans-serif;
+  display: flex; align-items: center; gap: 6px;
+}
+.auth-panel-pills span i { color: #fe730c; }
+.auth-panel-copy {
+  position: absolute; bottom: 24px; left: 0; right: 0; text-align: center;
+  font-size: .72rem; color: rgba(255,255,255,.35); font-family: 'Poppins', sans-serif;
+}
+
+/* ── Right form panel ── */
+.auth-panel-right {
+  flex: 1; background: #fff;
   display: flex; align-items: center; justify-content: center;
-  padding: 40px 20px;
-  position: relative; overflow: hidden;
+  padding: 48px 40px; position: relative;
 }
-.auth-page::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(254,115,12,.15) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 20%, rgba(14,165,233,.1) 0%, transparent 50%);
+.auth-form-wrap {
+  width: 100%; max-width: 400px;
+  animation: fadeInUp .45s ease;
 }
-.auth-card {
-  position: relative; z-index: 2;
-  background: #fff; border-radius: 24px;
-  width: 100%; max-width: 440px;
-  padding: 44px 40px 36px;
-  box-shadow: 0 32px 80px rgba(0,0,0,.28);
-  animation: fadeInUp .5s ease;
-}
-.auth-card-head { text-align: center; margin-bottom: 32px; }
+.auth-card-head { text-align: center; margin-bottom: 34px; }
 .auth-logo {
-  width: 68px; height: 68px; border-radius: 50%;
+  width: 70px; height: 70px; border-radius: 50%;
   overflow: hidden; margin: 0 auto 18px;
-  box-shadow: 0 6px 20px rgba(8,31,78,.2);
+  box-shadow: 0 6px 20px rgba(8,31,78,.15);
+  border: 2px solid #fee2cc;
 }
 .auth-logo img { width: 100%; height: 100%; object-fit: cover; }
 .auth-card-head h2 {
-  font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800;
+  font-family: 'Poppins', sans-serif; font-size: 1.55rem; font-weight: 800;
   color: #081f4e; margin-bottom: 6px;
 }
-.auth-card-head p { font-size: .88rem; color: #888; }
+.auth-card-head p { font-size: .87rem; color: #94a3b8; font-family: 'Poppins', sans-serif; }
 
 /* Form */
-.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-form { display: flex; flex-direction: column; gap: 20px; }
 .auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-field-row { display: flex; justify-content: space-between; align-items: center; }
 .auth-field label {
   font-family: 'Poppins', sans-serif; font-size: .78rem;
-  font-weight: 600; color: #555; letter-spacing: .3px;
+  font-weight: 600; color: #374151; letter-spacing: .3px;
 }
+.auth-forgot {
+  font-size: .75rem; color: #fe730c; font-family: 'Poppins', sans-serif;
+  font-weight: 600; text-decoration: none;
+}
+.auth-forgot:hover { text-decoration: underline; }
 .auth-input-wrap { position: relative; }
-.auth-input-wrap i {
+.auth-input-wrap > i {
   position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
   color: #bbb; font-size: .85rem; pointer-events: none;
 }
 .auth-input-wrap input {
-  width: 100%; padding: 12px 16px 12px 40px;
+  width: 100%; padding: 13px 44px 13px 42px;
   border: 1.5px solid #e4e7f0; border-radius: 10px;
   font-family: 'Poppins', sans-serif; font-size: .9rem; color: #333;
-  background: #f8faff; outline: none; transition: all .2s;
+  background: #f8faff; outline: none; transition: all .2s; box-sizing: border-box;
 }
 .auth-input-wrap input:focus {
   border-color: #fe730c; background: #fff;
   box-shadow: 0 0 0 4px rgba(254,115,12,.08);
 }
 .auth-input-wrap input::placeholder { color: #c0c8d8; }
+.auth-pwd-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: #9ca3af; font-size: .85rem; padding: 4px;
+  transition: color .15s;
+}
+.auth-pwd-toggle:hover { color: #fe730c; }
 .auth-error { font-size: .76rem; color: #dc2626; font-family: 'Poppins', sans-serif; }
 
 .auth-submit {
-  width: 100%; padding: 13px;
+  width: 100%; padding: 14px;
   background: linear-gradient(135deg, #fe730c 0%, #f97316 100%);
   color: #fff; border: none; border-radius: 10px;
   font-family: 'Poppins', sans-serif; font-size: .95rem; font-weight: 700;
   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px;
-  transition: opacity .2s, transform .2s; margin-top: 4px;
+  transition: opacity .2s, transform .2s; margin-top: 6px;
   box-shadow: 0 8px 24px rgba(254,115,12,.35);
 }
 .auth-submit:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
 .auth-submit:disabled { opacity: .6; cursor: not-allowed; }
 
+.auth-panel-copy-right {
+  text-align: center; margin-top: 32px;
+  font-size: .72rem; color: #cbd5e1; font-family: 'Poppins', sans-serif;
+}
+
+/* Responsive — stack on small screens */
+@media (max-width: 768px) {
+  .auth-split { flex-direction: column; }
+  .auth-panel-left { flex: 0 0 auto; padding: 48px 32px 40px; min-height: 280px; }
+  .auth-panel-logo-wrap { width: 76px; height: 76px; margin-bottom: 16px; }
+  .auth-panel-title { font-size: 1.3rem; }
+  .auth-panel-sub, .auth-panel-pills { display: none; }
+  .auth-panel-right { padding: 40px 24px; }
+}
+
+/* Kept for backward-compat if any page still uses .auth-page */
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #081f4e 0%, #0d2d6b 60%, #1a1a4e 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 20px; position: relative; overflow: hidden;
+}
 .auth-switch {
   text-align: center; margin-top: 22px;
   font-size: .85rem; color: #888; font-family: 'Poppins', sans-serif;
 }
 .auth-switch a { color: #fe730c; font-weight: 600; text-decoration: none; }
 .auth-switch a:hover { text-decoration: underline; }
+
+/* ===== FORGOT PASSWORD ===== */
+.fp-steps {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 24px;
+}
+.fp-step {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Poppins', sans-serif; font-size: .78rem; font-weight: 600;
+  color: #cbd5e1; white-space: nowrap;
+}
+.fp-step span {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #e2e8f0; color: #94a3b8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  transition: all .2s;
+}
+.fp-step-active { color: #081f4e; }
+.fp-step-active span { background: #fe730c; color: #fff; box-shadow: 0 4px 12px rgba(254,115,12,.35); }
+.fp-step-done { color: #16a34a; }
+.fp-step-done span { background: #dcfce7; color: #16a34a; }
+.fp-step-line {
+  flex: 1; height: 2px; background: #e2e8f0; margin: 0 10px;
+}
+.fp-error-banner {
+  background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px;
+  padding: 10px 14px; font-size: .84rem; color: #991b1b;
+  font-family: 'Poppins', sans-serif; display: flex; align-items: center; gap: 8px;
+  margin-bottom: 4px;
+}
+.fp-email-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+  padding: 9px 14px; font-size: .84rem;
+  font-family: 'Poppins', sans-serif;
+}
+.fp-email-pill i { color: #16a34a; flex-shrink: 0; }
+.fp-email-pill span { flex: 1; color: #374151; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-email-pill button {
+  background: none; border: none; cursor: pointer;
+  color: #fe730c; font-family: 'Poppins', sans-serif;
+  font-size: .78rem; font-weight: 600; padding: 0; flex-shrink: 0;
+}
+.fp-email-pill button:hover { text-decoration: underline; }
+.fp-success { text-align: center; padding: 12px 0 8px; }
+.fp-success-icon {
+  font-size: 3.5rem; color: #16a34a; margin-bottom: 16px;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+.fp-success p { font-family: 'Poppins', sans-serif; color: #6b7280; margin-bottom: 24px; font-size: .9rem; }
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 /* ===== PROFILE PAGE ===== */
 .profile-grid {

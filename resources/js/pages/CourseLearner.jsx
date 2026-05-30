@@ -257,7 +257,7 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
         <ViolationOverlay />
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,31,78,.65)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
             onClick={e => { if (e.target === e.currentTarget && !started && !result) onClose(); }}>
-            <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)' }}>
+            <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 960, maxHeight: '96vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.35)' }}>
 
                 {/* Header */}
                 <div style={{ background: 'linear-gradient(135deg,#081f4e,#1a3a7a)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -286,7 +286,7 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                     </div>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '48px 0', color: '#9ca3af' }}>
                             <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.8rem', marginBottom: 10, display: 'block', color: '#fe730c' }}></i>
@@ -297,19 +297,19 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                         <div>
                             {/* Time's up banner */}
                             {timedOut && (
-                                <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 10, padding: '12px 16px', marginBottom: 18, display: 'flex', gap: 8, alignItems: 'center' }}>
                                     <i className="fas fa-hourglass-end" style={{ color: '#ea580c' }}></i>
-                                    <span style={{ fontSize: '.82rem', color: '#7c2d12', fontWeight: 600 }}>Time's up! Your answers were submitted automatically.</span>
+                                    <span style={{ fontSize: '.85rem', color: '#7c2d12', fontWeight: 600 }}>Time's up! Your answers were submitted automatically.</span>
                                 </div>
                             )}
                             {/* Score card */}
-                            <div style={{ textAlign: 'center', padding: '24px 16px', background: result.passed ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)', borderRadius: 14, border: `2px solid ${result.passed ? '#86efac' : '#fca5a5'}`, marginBottom: 22 }}>
-                                <div style={{ fontSize: '3rem', marginBottom: 8 }}>{result.passed ? '🎉' : '😔'}</div>
-                                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: result.passed ? '#16a34a' : '#dc2626', fontFamily: 'Poppins,sans-serif', lineHeight: 1 }}>{result.score}%</div>
-                                <div style={{ fontSize: '.85rem', color: result.passed ? '#15803d' : '#b91c1c', fontWeight: 600, marginTop: 6 }}>
+                            <div style={{ textAlign: 'center', padding: '36px 24px', background: result.passed ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)', borderRadius: 16, border: `2px solid ${result.passed ? '#86efac' : '#fca5a5'}`, marginBottom: 28 }}>
+                                <div style={{ fontSize: '3.8rem', marginBottom: 12 }}>{result.passed ? '🎉' : '😔'}</div>
+                                <div style={{ fontSize: '3rem', fontWeight: 800, color: result.passed ? '#16a34a' : '#dc2626', fontFamily: 'Poppins,sans-serif', lineHeight: 1 }}>{result.score}%</div>
+                                <div style={{ fontSize: '1rem', color: result.passed ? '#15803d' : '#b91c1c', fontWeight: 700, marginTop: 10 }}>
                                     {result.passed ? 'You passed! Lesson marked complete.' : `Not passed. Pass mark is ${result.pass_mark}%.`}
                                 </div>
-                                <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: 4 }}>
+                                <div style={{ fontSize: '.88rem', color: '#6b7280', marginTop: 6 }}>
                                     {result.correct}/{result.total} correct · Attempt #{result.attempts_count}
                                 </div>
                             </div>
@@ -317,15 +317,15 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                             {/* Per-question breakdown — only shown on pass */}
                             {result.passed ? (
                                 <>
-                                    <p style={{ fontWeight: 700, color: '#374151', fontSize: '.83rem', marginBottom: 10 }}>Answer Review</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <p style={{ fontWeight: 700, color: '#374151', fontSize: '.92rem', marginBottom: 14 }}>Answer Review</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                                         {result.results.map((r, i) => (
-                                            <div key={r.question_id} style={{ background: r.is_correct ? '#f0fdf4' : '#fff5f5', border: `1.5px solid ${r.is_correct ? '#bbf7d0' : '#fca5a5'}`, borderRadius: 10, padding: '12px 14px' }}>
-                                                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
+                                            <div key={r.question_id} style={{ background: r.is_correct ? '#f0fdf4' : '#fff5f5', border: `1.5px solid ${r.is_correct ? '#bbf7d0' : '#fca5a5'}`, borderRadius: 12, padding: '14px 16px' }}>
+                                                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 10 }}>
                                                     <i className={`fas fa-${r.is_correct ? 'check-circle' : 'times-circle'}`} style={{ color: r.is_correct ? '#16a34a' : '#dc2626', marginTop: 3, flexShrink: 0 }}></i>
                                                     <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flex: 1 }}>
-                                                        <span style={{ fontSize: '.8rem', fontWeight: 800, color: '#64748b', flexShrink: 0, marginTop: 2 }}>Q{i + 1}.</span>
-                                                        <div className="exam-q-render" dangerouslySetInnerHTML={{ __html: r.question }} style={{ flex: 1, fontSize: '.85rem', fontWeight: 600, color: '#374151', lineHeight: 1.5 }} />
+                                                        <span style={{ fontSize: '.82rem', fontWeight: 800, color: '#64748b', flexShrink: 0, marginTop: 2 }}>Q{i + 1}.</span>
+                                                        <div className="exam-q-render" dangerouslySetInnerHTML={{ __html: r.question }} style={{ flex: 1, fontSize: '.88rem', fontWeight: 600, color: '#374151', lineHeight: 1.55 }} />
                                                     </div>
                                                 </div>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 22 }}>
@@ -336,9 +336,9 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                                                         if (isCorrect) { bg = '#dcfce7'; color = '#16a34a'; border = '#86efac'; }
                                                         else if (isSelected && !isCorrect) { bg = '#fee2e2'; color = '#dc2626'; border = '#fca5a5'; }
                                                         return (
-                                                            <span key={opt.id} style={{ padding: '3px 10px', borderRadius: 50, fontSize: '.72rem', fontWeight: 600, background: bg, color, border: `1.5px solid ${border}` }}>
-                                                                {isCorrect && <i className="fas fa-check" style={{ marginRight: 4, fontSize: '.6rem' }}></i>}
-                                                                {isSelected && !isCorrect && <i className="fas fa-times" style={{ marginRight: 4, fontSize: '.6rem' }}></i>}
+                                                            <span key={opt.id} style={{ padding: '4px 12px', borderRadius: 50, fontSize: '.76rem', fontWeight: 600, background: bg, color, border: `1.5px solid ${border}` }}>
+                                                                {isCorrect && <i className="fas fa-check" style={{ marginRight: 4, fontSize: '.62rem' }}></i>}
+                                                                {isSelected && !isCorrect && <i className="fas fa-times" style={{ marginRight: 4, fontSize: '.62rem' }}></i>}
                                                                 {opt.option_text}
                                                             </span>
                                                         );
@@ -349,11 +349,11 @@ function ExamModal({ lesson, token, onPassed, onClose }) {
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 12, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                                    <i className="fas fa-lock" style={{ color: '#d97706', fontSize: '1.1rem', marginTop: 2, flexShrink: 0 }}></i>
+                                <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 12, padding: '18px 22px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                                    <i className="fas fa-lock" style={{ color: '#d97706', fontSize: '1.2rem', marginTop: 2, flexShrink: 0 }}></i>
                                     <div>
-                                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#92400e', fontSize: '.85rem' }}>Answer review is not available</p>
-                                        <p style={{ margin: 0, color: '#92400e', fontSize: '.8rem' }}>Correct answers are only shown after you pass. Review the lesson material and try again.</p>
+                                        <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#92400e', fontSize: '.9rem' }}>Answer review is not available</p>
+                                        <p style={{ margin: 0, color: '#92400e', fontSize: '.84rem' }}>Correct answers are only shown after you pass. Review the lesson material and try again.</p>
                                     </div>
                                 </div>
                             )}

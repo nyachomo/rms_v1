@@ -60,6 +60,7 @@ import Roles from './pages/Roles';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import Register from './pages/Register';
 import Enrol from './pages/Enrol';
 import AdminEnrollments from './pages/AdminEnrollments';
@@ -75,6 +76,7 @@ import CodePractice from './pages/CodePractice';
 import LearningLayout from './components/LearningLayout';
 import Dashboard from './pages/Dashboard';
 import AdminScores from './pages/AdminScores';
+import ManualGradebook from './pages/ManualGradebook';
 import TechsphereClasses from './pages/TechsphereClasses';
 
 import '../css/app.css';
@@ -130,8 +132,9 @@ function App() {
                 <ThemeLoader />
                 <Routes>
                     {/* Auth — no navbar/footer */}
-                    <Route path="/login"    element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/login"            element={<Login />} />
+                    <Route path="/forgot-password"  element={<ForgotPassword />} />
+                    <Route path="/register"         element={<Register />} />
 
                     {/* All dashboard routes — protected by DashboardGuard */}
                     <Route path="/dashboard" element={<DashboardGuard />}>
@@ -156,6 +159,7 @@ function App() {
                         <Route path="users"          element={<Users />} />
                         <Route path="settings"       element={<Settings />} />
                         <Route path="student-scores"             element={<AdminScores />} />
+                        <Route path="manual-gradebook"          element={<ManualGradebook />} />
                         <Route path="learning" element={<LearningLayout />}>
                             <Route index                      element={<Learning />} />
                             <Route path="browse"             element={<BrowsePrograms />} />

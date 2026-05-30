@@ -27,6 +27,8 @@ use App\Http\Controllers\LearningController;
 use App\Http\Controllers\LessonExamController;
 use App\Http\Controllers\LessonExamAttemptController;
 use App\Http\Controllers\AdminScoreController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\ManualGradebookController;
 use App\Http\Controllers\TechsphereClassController;
 
 // Public routes
@@ -45,8 +47,10 @@ Route::get('/public-schools',           [SchoolController::class,        'public
 
 // Auth routes
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
+    Route::post('/register',               [AuthController::class, 'register']);
+    Route::post('/login',                  [AuthController::class, 'login']);
+    Route::post('/verify-reset-email',     [AuthController::class, 'verifyResetEmail']);
+    Route::post('/reset-forgotten-password', [AuthController::class, 'resetForgottenPassword']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
@@ -213,8 +217,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/learning/lessons/{lesson}/exam/submit',            [LessonExamAttemptController::class, 'submit']);
 
     // Admin gradebook
-    Route::get('/admin/scores/courses',               [AdminScoreController::class, 'courses']);
-    Route::get('/admin/courses/{course}/scores',      [AdminScoreController::class, 'courseScores']);
+    Route::get('/admin/scores/courses',                                         [AdminScoreController::class, 'courses']);
+    Route::get('/admin/courses/{course}/scores',                                [AdminScoreController::class, 'courseScores']);
+    Route::delete('/admin/scores/lessons/{lesson}/students/{user}/attempts',    [AdminScoreController::class, 'resetAttempts']);
+    Route::get('/admin/courses/{course}/students/{user}/certificate',           [CertificateController::class, 'download']);
+
+    // Manual Gradebook
+    Route::get('/manual-gradebook/courses',                                    [ManualGradebookController::class, 'courses']);
+    Route::get('/courses/{course}/assessments',                                [ManualGradebookController::class, 'index']);
+    Route::post('/courses/{course}/assessments',                               [ManualGradebookController::class, 'store']);
+    Route::get('/courses/{course}/manual-gradebook',                           [ManualGradebookController::class, 'grid']);
+    Route::put('/assessments/{assessment}',                                    [ManualGradebookController::class, 'update']);
+    Route::delete('/assessments/{assessment}',                                 [ManualGradebookController::class, 'destroy']);
+    Route::put('/assessments/{assessment}/scores/{user}',                      [ManualGradebookController::class, 'saveScore']);
+    Route::delete('/assessments/{assessment}/scores/{user}',                   [ManualGradebookController::class, 'deleteScore']);
 
     // Direct lesson CRUD (no course/module in URL)
     Route::put('/admin/lessons/{lesson}',                            [CourseLessonController::class, 'directUpdate']);
