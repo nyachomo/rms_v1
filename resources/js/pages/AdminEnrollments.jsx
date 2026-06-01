@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardSidebar from '../components/DashboardSidebar';
 import DashboardNavbar from '../components/DashboardNavbar';
 import AccessDenied from '../components/AccessDenied';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 /* ── Toast ── */
 function Toast({ message, type, onClose }) {
@@ -712,7 +715,8 @@ export default function AdminEnrollments() {
     const [intakeFilter, setIntakeFilter]   = useState('');
     const [schoolFilter, setSchoolFilter]   = useState('');
     const [courseFilter, setCourseFilter]   = useState('');
-    const [filterOptions, setFilterOptions] = useState({ intakes: [], schools: [], courses: [] });
+    const [classFilter,  setClassFilter]    = useState('');
+    const [filterOptions, setFilterOptions] = useState({ intakes: [], schools: [], courses: [], classes: [] });
     const [page, setPage]               = useState(1);
     const [perPage, setPerPage]         = useState(15);
     const [detail, setDetail]           = useState(null);
@@ -721,6 +725,9 @@ export default function AdminEnrollments() {
     const [delTarget, setDelTarget]     = useState(null);
     const [delSaving, setDelSaving]     = useState(false);
     const [toast, setToast]             = useState({ message: '', type: '' });
+    const [downloading, setDownloading] = useState(false);
+    const [exportOpen, setExportOpen]   = useState(false);
+    const exportRef                     = useRef(null);
 
     const notify = (message, type = 'success') => {
         setToast({ message, type });
@@ -733,10 +740,12 @@ export default function AdminEnrollments() {
             fetch('/api/active-intakes',              { headers: h }).then(r => r.json()),
             fetch('/api/public-schools',              { headers: h }).then(r => r.json()),
             fetch('/api/admin/courses?per_page=200',  { headers: h }).then(r => r.json()),
-        ]).then(([i, s, c]) => setFilterOptions({
-            intakes: Array.isArray(i) ? i : (i.data ?? []),
-            schools: Array.isArray(s) ? s : (s.data ?? []),
+            fetch('/api/public-classes',              { headers: h }).then(r => r.json()),
+        ]).then(([i, s, c, cl]) => setFilterOptions({
+            intakes: Array.isArray(i)  ? i  : (i.data  ?? []),
+            schools: Array.isArray(s)  ? s  : (s.data  ?? []),
             courses: c.data ?? (Array.isArray(c) ? c : []),
+            classes: Array.isArray(cl) ? cl : (cl.data ?? []),
         }));
     }, [token]);
 
@@ -749,6 +758,7 @@ export default function AdminEnrollments() {
             if (intakeFilter) params.set('intake_id', intakeFilter);
             if (schoolFilter) params.set('school_id', schoolFilter);
             if (courseFilter) params.set('course_id', courseFilter);
+            if (classFilter)  params.set('class_id',  classFilter);
             const res  = await fetch(`/api/enrollments?${params}`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } });
             const data = await res.json();
             setEnrollments(data.data ?? []);
@@ -756,7 +766,7 @@ export default function AdminEnrollments() {
         } finally {
             setLoading(false);
         }
-    }, [token, page, perPage, search, statusFilter, intakeFilter, schoolFilter, courseFilter]);
+    }, [token, page, perPage, search, statusFilter, intakeFilter, schoolFilter, courseFilter, classFilter]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -772,10 +782,16 @@ export default function AdminEnrollments() {
         load();
     };
 
+    useEffect(() => {
+        const handler = e => { if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
     const handleStatusSave = updated => {
         setEnrollments(list => list.map(e => e.id === updated.id ? { ...e, ...updated } : e));
-        setDetail(prev => prev ? { ...prev, ...updated } : null);
-        notify('Status updated successfully');
+        setDetail(null);
+        notify(`Enrollment ${updated.status === 'approved' ? 'approved' : updated.status === 'rejected' ? 'rejected' : 'updated'} successfully`);
     };
 
     const confirmDelete = async () => {
@@ -789,6 +805,140 @@ export default function AdminEnrollments() {
             notify('Delete failed', 'error');
         } finally {
             setDelSaving(false);
+        }
+    };
+
+    const exportData = async (format) => {
+        setExportOpen(false);
+        setDownloading(true);
+        try {
+            const params = new URLSearchParams({ per_page: 9999, page: 1 });
+            if (search)       params.set('search',    search);
+            if (statusFilter) params.set('status',    statusFilter);
+            if (intakeFilter) params.set('intake_id', intakeFilter);
+            if (schoolFilter) params.set('school_id', schoolFilter);
+            if (courseFilter) params.set('course_id', courseFilter);
+            if (classFilter)  params.set('class_id',  classFilter);
+            const res  = await fetch(`/api/enrollments?${params}`, { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            const rows = data.data ?? [];
+            const date = new Date().toISOString().slice(0, 10);
+
+            /* ── build active-filter summary ── */
+            const activeFilters = [];
+            if (search)       activeFilters.push(`Search: "${search}"`);
+            if (statusFilter) activeFilters.push(`Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`);
+            if (intakeFilter) {
+                const found = filterOptions.intakes.find(i => String(i.id) === String(intakeFilter));
+                activeFilters.push(`Intake: ${found?.intake_name ?? intakeFilter}`);
+            }
+            if (courseFilter) {
+                const found = filterOptions.courses.find(c => String(c.id) === String(courseFilter));
+                activeFilters.push(`Course: ${found?.title ?? courseFilter}`);
+            }
+            if (schoolFilter) {
+                const found = filterOptions.schools.find(s => String(s.id) === String(schoolFilter));
+                activeFilters.push(`School: ${found?.school_name ?? schoolFilter}`);
+            }
+            if (classFilter) {
+                const found = filterOptions.classes.find(c => String(c.id) === String(classFilter));
+                activeFilters.push(`Class: ${found?.name ?? classFilter}`);
+            }
+            const filterSummary  = activeFilters.length ? activeFilters.join('  |  ') : 'All records (no filters applied)';
+            const generatedLine  = `Generated: ${new Date().toLocaleString()}`;
+            const totalLine      = `Total records: ${rows.length}`;
+
+            const headers = ['#', 'Name', 'Email', 'Phone', 'Course', 'Intake', 'Sponsorship', 'Sponsor Name', 'Sponsor Email', 'Sponsor Phone', 'Status', 'Applied Date'];
+            const toRow = (e, i) => [
+                i + 1, e.name ?? '', e.email ?? '', e.phone ?? '',
+                e.course?.title ?? '', e.intake?.intake_name ?? '',
+                e.sponsorship ?? '', e.sponsor_name ?? '', e.sponsor_email ?? '', e.sponsor_phone ?? '',
+                e.status ?? '',
+                e.created_at ? new Date(e.created_at).toLocaleDateString('en-GB') : '',
+            ];
+
+            if (format === 'csv') {
+                const escape = v => `"${String(v).replace(/"/g, '""')}"`;
+                const lines  = [
+                    escape('Enrollments Report'),
+                    escape(generatedLine),
+                    escape(`Filters: ${filterSummary}`),
+                    escape(totalLine),
+                    '',
+                    headers.map(escape).join(','),
+                    ...rows.map((e, i) => toRow(e, i).map(escape).join(',')),
+                ];
+                const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+                const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `enrollments-${date}.csv` });
+                a.click(); URL.revokeObjectURL(a.href);
+
+            } else if (format === 'excel') {
+                const metaRows = [
+                    ['Enrollments Report'],
+                    [generatedLine],
+                    [`Filters: ${filterSummary}`],
+                    [totalLine],
+                    [],
+                    headers,
+                    ...rows.map(toRow),
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(metaRows);
+                /* bold + large title */
+                ws['A1'].s = { font: { bold: true, sz: 14 } };
+                /* merge title across all columns */
+                ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+                /* freeze header row (row 6 = index 5) */
+                ws['!freeze'] = { xSplit: 0, ySplit: 6 };
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Enrollments');
+                XLSX.writeFile(wb, `enrollments-${date}.xlsx`);
+
+            } else if (format === 'pdf') {
+                const doc = new jsPDF({ orientation: 'landscape' });
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(8, 31, 78);
+                doc.text('Enrollments Report', 14, 16);
+
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(90, 90, 90);
+                doc.text(generatedLine, 14, 23);
+                doc.text(totalLine, 14, 29);
+
+                /* filter pill box */
+                const boxY = 34;
+                doc.setFillColor(240, 247, 255);
+                doc.setDrawColor(180, 210, 255);
+                doc.roundedRect(14, boxY, doc.internal.pageSize.width - 28, 10, 2, 2, 'FD');
+                doc.setFontSize(7.5);
+                doc.setTextColor(30, 58, 138);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Filters applied:', 17, boxY + 6.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(50, 50, 50);
+                const filterText = doc.splitTextToSize(filterSummary, doc.internal.pageSize.width - 60);
+                doc.text(filterText, 46, boxY + 6.5);
+
+                autoTable(doc, {
+                    startY: boxY + 16,
+                    head: [headers],
+                    body: rows.map(toRow),
+                    styles: { fontSize: 7, cellPadding: 2 },
+                    headStyles: { fillColor: [8, 31, 78], textColor: 255, fontStyle: 'bold' },
+                    alternateRowStyles: { fillColor: [248, 250, 255] },
+                    didDrawPage: (hookData) => {
+                        /* page footer */
+                        const pageCount = doc.internal.getNumberOfPages();
+                        doc.setFontSize(7);
+                        doc.setTextColor(150);
+                        doc.text(`Page ${hookData.pageNumber} of ${pageCount}`, doc.internal.pageSize.width - 28, doc.internal.pageSize.height - 8);
+                    },
+                });
+                doc.save(`enrollments-${date}.pdf`);
+            }
+        } finally {
+            setDownloading(false);
         }
     };
 
@@ -811,47 +961,15 @@ export default function AdminEnrollments() {
                 <div className="db-content">
                 <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: '' })} />
 
-                {/* ── Page header banner ── */}
-                <div style={{ background: 'linear-gradient(135deg,#081f4e 0%,#0d2060 60%,#1e3a8a 100%)', borderRadius: 20, padding: '28px 32px', marginBottom: 28, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(254,115,12,.08)', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'absolute', bottom: -30, right: 140, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,.03)', pointerEvents: 'none' }}></div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, position: 'relative' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <div style={{ width: 52, height: 52, borderRadius: 15, background: 'rgba(254,115,12,.2)', border: '1px solid rgba(254,115,12,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <i className="fas fa-file-alt" style={{ color: '#fe730c', fontSize: '1.3rem' }}></i>
-                            </div>
-                            <div>
-                                <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, color: '#fff', fontFamily: 'Poppins,sans-serif', letterSpacing: '-.01em' }}>Enrollments</h1>
-                                <p style={{ margin: '3px 0 0', color: 'rgba(255,255,255,.55)', fontSize: '.82rem', fontFamily: 'Poppins,sans-serif' }}>
-                                    Review and manage course enrollment applications
-                                </p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                            {can('enrollments', 'view_stats') && [
-                                { icon: 'fas fa-layer-group', label: `${meta.total ?? 0} Total`, color: 'rgba(255,255,255,.12)', text: 'rgba(255,255,255,.8)' },
-                                { icon: 'fas fa-hourglass-half', label: `${counts.pending} Pending`, color: 'rgba(245,158,11,.2)', text: '#fbbf24' },
-                                { icon: 'fas fa-check-circle',   label: `${counts.approved} Approved`, color: 'rgba(16,185,129,.2)', text: '#34d399' },
-                            ].map((b, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, background: b.color, border: `1px solid ${b.color}`, borderRadius: 10, padding: '7px 14px' }}>
-                                    <i className={b.icon} style={{ color: b.text, fontSize: '.75rem' }}></i>
-                                    <span style={{ color: b.text, fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 700 }}>{b.label}</span>
-                                </div>
-                            ))}
-                            {can('enrollments', 'create') && (
-                                <button onClick={() => setEnrollOpen(true)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#fe730c,#f97316)', border: 'none', borderRadius: 10, padding: '9px 18px', color: '#fff', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(254,115,12,.4)', transition: 'opacity .2s' }}
-                                    onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
-                                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                                    <i className="fas fa-user-plus" style={{ fontSize: '.8rem' }}></i>
-                                    Enroll Student
-                                </button>
-                            )}
-                        </div>
+                <div className="db-topbar">
+                    <div>
+                        <h1 className="db-page-title">Enrollments</h1>
+                        <p className="db-page-sub">Review and manage course enrollment applications</p>
                     </div>
                 </div>
 
-                {/* ── Stat cards ── */}
+
+{/* ── Stat cards ── */}
                 {can('enrollments', 'view_stats') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16, marginBottom: 24 }}>
                     {statCards.map(c => (
                         <div key={c.label} style={{ background: '#fff', borderRadius: 16, padding: '20px 20px', boxShadow: '0 2px 12px rgba(0,0,0,.06)', border: '1px solid #eef0f6', display: 'flex', alignItems: 'center', gap: 16, overflow: 'hidden', position: 'relative' }}>
@@ -870,13 +988,49 @@ export default function AdminEnrollments() {
                 {/* ── Filters bar ── */}
                 <div style={{ background: '#fff', borderRadius: 16, padding: '14px 20px', boxShadow: '0 2px 10px rgba(0,0,0,.05)', border: '1px solid #eef0f6', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-                    {/* Row 1: Search + Status pills + Per page */}
+                    {/* Row 1: Search + Enroll button + Status pills + Per page */}
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                         <div style={{ flex: '1 1 220px', position: 'relative' }}>
                             <i className="fas fa-search" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', fontSize: '.82rem' }}></i>
                             <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name, email or phone…"
                                 style={{ width: '100%', paddingLeft: 38, paddingRight: 14, paddingTop: 9, paddingBottom: 9, border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', outline: 'none', color: '#374151', background: '#f8faff', boxSizing: 'border-box' }}
                                 onFocus={e => e.target.style.borderColor = '#fe730c'} onBlur={e => e.target.style.borderColor = '#e8eaf0'} />
+                        </div>
+                        {can('enrollments', 'create') && (
+                            <button onClick={() => setEnrollOpen(true)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg,#fe730c,#f97316)', border: 'none', borderRadius: 10, padding: '9px 16px', color: '#fff', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(254,115,12,.35)', whiteSpace: 'nowrap', flexShrink: 0 }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
+                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                                <i className="fas fa-user-plus" style={{ fontSize: '.78rem' }}></i>
+                                Enroll Student
+                            </button>
+                        )}
+                        <div ref={exportRef} style={{ position: 'relative', flexShrink: 0 }}>
+                            <button onClick={() => setExportOpen(o => !o)} disabled={downloading}
+                                style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#fff', border: '1.5px solid #e8eaf0', borderRadius: 10, padding: '8px 14px', color: '#16a34a', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', cursor: downloading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: downloading ? .7 : 1 }}
+                                onMouseEnter={e => { if (!downloading) { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#86efac'; } }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e8eaf0'; }}>
+                                <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} style={{ fontSize: '.78rem' }}></i>
+                                {downloading ? 'Exporting…' : 'Export'}
+                                {!downloading && <i className="fas fa-chevron-down" style={{ fontSize: '.6rem', marginLeft: 2 }}></i>}
+                            </button>
+                            {exportOpen && (
+                                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, background: '#fff', border: '1.5px solid #e8eaf0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 50, minWidth: 160, overflow: 'hidden' }}>
+                                    {[
+                                        { fmt: 'pdf',   icon: 'fas fa-file-pdf',   label: 'PDF',          color: '#dc2626' },
+                                        { fmt: 'excel', icon: 'fas fa-file-excel',  label: 'Excel (.xlsx)', color: '#16a34a' },
+                                        { fmt: 'csv',   icon: 'fas fa-file-csv',    label: 'CSV',           color: '#0d9488' },
+                                    ].map(({ fmt, icon, label, color }) => (
+                                        <button key={fmt} onClick={() => exportData(fmt)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 600, color: '#374151', textAlign: 'left' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f8faff'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                                            <i className={icon} style={{ color, fontSize: '.9rem', width: 18 }}></i>
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             {['', 'pending', 'approved', 'rejected'].map(s => {
@@ -908,6 +1062,8 @@ export default function AdminEnrollments() {
                               options: filterOptions.courses.map(c => ({ value: c.id, label: c.title })) },
                             { label: 'All Schools', value: schoolFilter, set: setSchoolFilter, icon: 'fas fa-school', color: '#7c3aed',
                               options: filterOptions.schools.map(s => ({ value: s.id, label: s.school_name })) },
+                            { label: 'All Classes', value: classFilter,  set: setClassFilter,  icon: 'fas fa-chalkboard-teacher', color: '#be185d',
+                              options: filterOptions.classes.map(c => ({ value: c.id, label: c.name })) },
                         ].map(f => (
                             <div key={f.label} style={{ position: 'relative', flex: '1 1 180px' }}>
                                 <i className={f.icon} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: f.value ? f.color : '#cbd5e1', fontSize: '.72rem', pointerEvents: 'none' }}></i>
@@ -919,8 +1075,8 @@ export default function AdminEnrollments() {
                                 <i className="fas fa-chevron-down" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '.6rem', pointerEvents: 'none' }}></i>
                             </div>
                         ))}
-                        {(intakeFilter || courseFilter || schoolFilter) && (
-                            <button onClick={() => { setIntakeFilter(''); setCourseFilter(''); setSchoolFilter(''); setPage(1); }}
+                        {(intakeFilter || courseFilter || schoolFilter || classFilter) && (
+                            <button onClick={() => { setIntakeFilter(''); setCourseFilter(''); setSchoolFilter(''); setClassFilter(''); setPage(1); }}
                                 style={{ padding: '7px 12px', borderRadius: 10, border: '1.5px solid #fecaca', background: '#fff', color: '#dc2626', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
                                 <i className="fas fa-times" style={{ fontSize: '.65rem' }}></i> Clear filters
                             </button>

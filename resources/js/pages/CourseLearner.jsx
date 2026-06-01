@@ -7,6 +7,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { html as cmHtml } from '@codemirror/lang-html';
 import { css as cmCss } from '@codemirror/lang-css';
 import { javascript as cmJs } from '@codemirror/lang-javascript';
+import { python as cmPython } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
 
 function buildPlaySrc(html, css, js) {
@@ -573,7 +574,109 @@ export default function CourseLearner() {
     const [playJs,   setPlayJs]     = useState('// JavaScript goes here\nconsole.log("Ready!");');
     const [playSrc,  setPlaySrc]    = useState('');
 
+    /* ── Python / R playground ── */
+    const [playMode,   setPlayMode]   = useState('web'); // 'web' | 'python' | 'r'
+    const [playPython, setPlayPython] = useState(
+`# Python Playground
+print("Hello from Python!")
+
+# Basic statistics example
+data = [23, 45, 12, 67, 34, 89, 11, 56]
+mean = sum(data) / len(data)
+print(f"Data: {data}")
+print(f"Mean: {mean:.2f}")
+print(f"Min: {min(data)}, Max: {max(data)}")
+`);
+    const [playR, setPlayR] = useState(
+`# R Playground
+cat("Hello from R!\\n")
+
+# Basic statistics example
+data <- c(23, 45, 12, 67, 34, 89, 11, 56)
+cat("Data:", data, "\\n")
+cat("Mean:", mean(data), "\\n")
+cat("SD:", round(sd(data), 2), "\\n")
+cat("Summary:\\n")
+print(summary(data))
+`);
+    const [playOutput,  setPlayOutput]  = useState([]);
+    const [playRunning, setPlayRunning] = useState(false);
+    const pyodideRef = useRef(null);
+    const webRRef    = useRef(null);
+
     const runPlay = () => setPlaySrc(buildPlaySrc(playHtml, playCss, playJs));
+
+    const runPython = async () => {
+        setPlayRunning(true);
+        setPlayOutput([{ type: 'info', text: '▶  Running Python…' }]);
+        try {
+            if (!pyodideRef.current) {
+                setPlayOutput(o => [...o, { type: 'info', text: '⏳  Loading Python runtime (first run may take ~10s)…' }]);
+                await new Promise((resolve, reject) => {
+                    if (document.querySelector('script[data-pyodide]')) { resolve(); return; }
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.4/full/pyodide.js';
+                    s.setAttribute('data-pyodide', '1');
+                    s.onload = resolve; s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+                pyodideRef.current = await window.loadPyodide();
+            }
+            const py = pyodideRef.current;
+            const out = [];
+            py.setStdout({ batched: t => out.push({ type: 'stdout', text: t }) });
+            py.setStderr({ batched: t => out.push({ type: 'stderr', text: t }) });
+            try {
+                await py.runPythonAsync(playPython);
+            } catch (e) {
+                out.push({ type: 'stderr', text: e.message });
+            }
+            setPlayOutput(out.length ? out : [{ type: 'info', text: '✓  Done (no output)' }]);
+        } catch (e) {
+            setPlayOutput([{ type: 'stderr', text: `Failed to load Python: ${e.message}` }]);
+        } finally {
+            setPlayRunning(false);
+        }
+    };
+
+    const runR = async () => {
+        setPlayRunning(true);
+        setPlayOutput([{ type: 'info', text: '▶  Running R…' }]);
+        try {
+            if (!webRRef.current) {
+                setPlayOutput(o => [...o, { type: 'info', text: '⏳  Loading R runtime (first run may take ~15s)…' }]);
+                const { WebR } = await import(/* @vite-ignore */ 'https://webr.r-wasm.org/v0.4.2/webr.mjs');
+                const webR = new WebR();
+                await webR.init();
+                webRRef.current = webR;
+            }
+            const webR = webRRef.current;
+            const out  = [];
+            await webR.writeConsole(playR + '\n');
+            let msg;
+            const deadline = Date.now() + 30000;
+            while (Date.now() < deadline) {
+                msg = await Promise.race([
+                    webR.read(),
+                    new Promise(r => setTimeout(() => r({ type: 'timeout' }), 5000)),
+                ]);
+                if (!msg || msg.type === 'timeout' || msg.type === 'prompt') break;
+                if (msg.type === 'stdout') out.push({ type: 'stdout', text: msg.data });
+                else if (msg.type === 'stderr') out.push({ type: 'stderr', text: msg.data });
+            }
+            setPlayOutput(out.length ? out : [{ type: 'info', text: '✓  Done (no output)' }]);
+        } catch (e) {
+            setPlayOutput([{ type: 'stderr', text: `Error: ${e.message}` }]);
+        } finally {
+            setPlayRunning(false);
+        }
+    };
+
+    const handleRun = () => {
+        if (playMode === 'python') runPython();
+        else if (playMode === 'r') runR();
+        else runPlay();
+    };
 
     useEffect(() => {
         if (!token) { navigate('/login'); return; }
@@ -708,6 +811,11 @@ export default function CourseLearner() {
                         Lesson {currentIndex + 1} of {totalCount}
                     </span>
                 )}
+                <button onClick={() => setLessonPanel(v => !v)} title={lessonPanelOpen ? 'Collapse lesson panel' : 'Expand lesson panel'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20, border: '1.5px solid #e2e8f0', background: lessonPanelOpen ? '#f1f5f9' : '#fff', color: '#475569', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, flexShrink: 0, transition: 'all .2s' }}>
+                    <i className={`fas fa-${lessonPanelOpen ? 'indent' : 'outdent'}`} style={{ fontSize: '.72rem' }}></i>
+                    {lessonPanelOpen ? 'Hide Lessons' : 'Show Lessons'}
+                </button>
                 <button onClick={() => setPlayOpen(v => !v)}
                     style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 20, border: 'none', background: playOpen ? 'linear-gradient(135deg,#fe730c,#f97316)' : '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, flexShrink: 0, transition: 'all .2s', boxShadow: '0 2px 8px rgba(8,31,78,.2)' }}>
                     <i className={`fas fa-${playOpen ? 'times' : 'terminal'}`} style={{ fontSize: '.7rem' }}></i>
@@ -719,7 +827,15 @@ export default function CourseLearner() {
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
                 {/* Vertical module panel */}
-                {data?.modules?.length > 0 && (
+                {data?.modules?.length > 0 && !lessonPanelOpen && (
+                    <div style={{ width: 36, flexShrink: 0, background: '#f4f6fb', borderRight: '1.5px solid #e8ecf4', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12 }}>
+                        <button onClick={() => setLessonPanel(true)} title="Show lessons"
+                            style={{ width: 28, height: 28, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#6366f1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.7rem' }}>
+                            <i className="fas fa-outdent"></i>
+                        </button>
+                    </div>
+                )}
+                {data?.modules?.length > 0 && lessonPanelOpen && (
                     <div style={{ width: 290, flexShrink: 0, background: '#f4f6fb', borderRight: '1.5px solid #e8ecf4', overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 10px', gap: 8 }}>
                         {data.modules.map((mod, mi) => {
                             const isOpen       = expandedMods[mod.id] === true;
@@ -963,64 +1079,127 @@ export default function CourseLearner() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
                                 <i className="fas fa-terminal" style={{ color: '#fe730c', fontSize: '.8rem' }}></i>
                                 <span style={{ color: '#c9d1d9', fontSize: '.78rem', fontWeight: 700, fontFamily: 'Poppins,sans-serif', flex: 1 }}>Code Playground</span>
-                                <button onClick={runPlay}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700 }}>
-                                    <i className="fas fa-play" style={{ fontSize: '.65rem' }}></i> Run
+
+                                {/* Mode switcher */}
+                                <div style={{ display: 'flex', gap: 2, background: '#0d1117', borderRadius: 8, padding: 3 }}>
+                                    {[
+                                        { id: 'web',    label: 'Web',    icon: 'fa-globe',    color: '#e34c26' },
+                                        { id: 'python', label: 'Python', icon: 'fa-code',     color: '#3572A5' },
+                                        { id: 'r',      label: 'R',      icon: 'fa-chart-bar',color: '#198CE7' },
+                                    ].map(m => (
+                                        <button key={m.id} onClick={() => { setPlayMode(m.id); setPlayOutput([]); }}
+                                            style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: playMode === m.id ? m.color : 'transparent', color: playMode === m.id ? '#fff' : '#8b949e', fontFamily: 'Poppins,sans-serif', fontSize: '.68rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all .15s' }}>
+                                            <i className={`fas ${m.icon}`} style={{ fontSize: '.6rem' }}></i>{m.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button onClick={handleRun} disabled={playRunning}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 8, border: 'none', background: playRunning ? '#30363d' : 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', cursor: playRunning ? 'not-allowed' : 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, flexShrink: 0 }}>
+                                    <i className={`fas fa-${playRunning ? 'spinner fa-spin' : 'play'}`} style={{ fontSize: '.65rem' }}></i>
+                                    {playRunning ? 'Running…' : 'Run'}
                                 </button>
                             </div>
 
-                            {/* Tab bar */}
-                            <div style={{ display: 'flex', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
-                                {[
-                                    { id: 'html', label: 'HTML',       color: '#e34c26' },
-                                    { id: 'css',  label: 'CSS',        color: '#264de4' },
-                                    { id: 'js',   label: 'JavaScript', color: '#f7df1e' },
-                                ].map(t => (
-                                    <button key={t.id} onClick={() => setPlayTab(t.id)}
-                                        style={{ padding: '8px 18px', border: 'none', background: playTab === t.id ? '#0d1117' : 'transparent', color: playTab === t.id ? t.color : '#8b949e', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: playTab === t.id ? `2px solid ${t.color}` : '2px solid transparent', transition: 'all .15s' }}>
-                                        {t.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Editor */}
-                            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                                <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-                                    {playTab === 'html' && (
-                                        <CodeMirror value={playHtml} theme={oneDark} extensions={[cmHtml()]}
-                                            onChange={v => setPlayHtml(v)}
-                                            style={{ fontSize: 13, height: '100%' }}
-                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
-                                    )}
-                                    {playTab === 'css' && (
-                                        <CodeMirror value={playCss} theme={oneDark} extensions={[cmCss()]}
-                                            onChange={v => setPlayCss(v)}
-                                            style={{ fontSize: 13, height: '100%' }}
-                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
-                                    )}
-                                    {playTab === 'js' && (
-                                        <CodeMirror value={playJs} theme={oneDark} extensions={[cmJs()]}
-                                            onChange={v => setPlayJs(v)}
-                                            style={{ fontSize: 13, height: '100%' }}
-                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
-                                    )}
-                                </div>
-
-                                {/* Preview */}
-                                <div style={{ height: '40%', flexShrink: 0, borderTop: '2px solid #30363d', display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: '#161b22', flexShrink: 0 }}>
-                                        <div style={{ display: 'flex', gap: 5 }}>
-                                            {['#ff5f57','#ffbd2e','#28c840'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}
-                                        </div>
-                                        <i className="fas fa-eye" style={{ color: '#8b949e', fontSize: '.72rem' }}></i>
-                                        <span style={{ color: '#8b949e', fontSize: '.72rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Preview</span>
-                                        {!playSrc && <span style={{ marginLeft: 'auto', fontSize: '.65rem', color: '#6b7280', fontFamily: 'Poppins,sans-serif' }}>Click Run to see output</span>}
+                            {/* ── WEB mode: HTML/CSS/JS tabs ── */}
+                            {playMode === 'web' && (
+                                <>
+                                    <div style={{ display: 'flex', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
+                                        {[
+                                            { id: 'html', label: 'HTML',       color: '#e34c26' },
+                                            { id: 'css',  label: 'CSS',        color: '#264de4' },
+                                            { id: 'js',   label: 'JavaScript', color: '#f7df1e' },
+                                        ].map(t => (
+                                            <button key={t.id} onClick={() => setPlayTab(t.id)}
+                                                style={{ padding: '8px 18px', border: 'none', background: playTab === t.id ? '#0d1117' : 'transparent', color: playTab === t.id ? t.color : '#8b949e', fontFamily: 'Poppins,sans-serif', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer', borderBottom: playTab === t.id ? `2px solid ${t.color}` : '2px solid transparent', transition: 'all .15s' }}>
+                                                {t.label}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <iframe key={playSrc} srcDoc={playSrc || '<body style="font-family:sans-serif;color:#6b7280;display:flex;align-items:center;justify-content:center;height:100%;margin:0"><p>▶ Click <strong style=color:#fe730c>Run</strong> to preview</p></body>'}
-                                        title="Playground Preview" sandbox="allow-scripts"
-                                        style={{ flex: 1, border: 'none', background: '#fff', width: '100%' }} />
-                                </div>
-                            </div>
+                                    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                        <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                                            {playTab === 'html' && <CodeMirror value={playHtml} theme={oneDark} extensions={[cmHtml()]} onChange={v => setPlayHtml(v)} style={{ fontSize: 13, height: '100%' }} basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />}
+                                            {playTab === 'css'  && <CodeMirror value={playCss}  theme={oneDark} extensions={[cmCss()]}  onChange={v => setPlayCss(v)}  style={{ fontSize: 13, height: '100%' }} basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />}
+                                            {playTab === 'js'   && <CodeMirror value={playJs}   theme={oneDark} extensions={[cmJs()]}   onChange={v => setPlayJs(v)}   style={{ fontSize: 13, height: '100%' }} basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />}
+                                        </div>
+                                        <div style={{ height: '40%', flexShrink: 0, borderTop: '2px solid #30363d', display: 'flex', flexDirection: 'column' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: '#161b22', flexShrink: 0 }}>
+                                                <div style={{ display: 'flex', gap: 5 }}>{['#ff5f57','#ffbd2e','#28c840'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}</div>
+                                                <i className="fas fa-eye" style={{ color: '#8b949e', fontSize: '.72rem' }}></i>
+                                                <span style={{ color: '#8b949e', fontSize: '.72rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Preview</span>
+                                                {!playSrc && <span style={{ marginLeft: 'auto', fontSize: '.65rem', color: '#6b7280', fontFamily: 'Poppins,sans-serif' }}>Click Run to see output</span>}
+                                            </div>
+                                            <iframe key={playSrc} srcDoc={playSrc || '<body style="font-family:sans-serif;color:#6b7280;display:flex;align-items:center;justify-content:center;height:100%;margin:0"><p>▶ Click <strong style=color:#fe730c>Run</strong> to preview</p></body>'}
+                                                title="Playground Preview" sandbox="allow-scripts"
+                                                style={{ flex: 1, border: 'none', background: '#fff', width: '100%' }} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ── PYTHON mode ── */}
+                            {playMode === 'python' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
+                                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#3572A5', flexShrink: 0 }}></span>
+                                        <span style={{ color: '#8b949e', fontSize: '.72rem', fontFamily: 'Poppins,sans-serif' }}>Python 3 · powered by Pyodide (WebAssembly)</span>
+                                    </div>
+                                    <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                                        <CodeMirror value={playPython} theme={oneDark} extensions={[cmPython()]}
+                                            onChange={v => setPlayPython(v)}
+                                            style={{ fontSize: 13, height: '100%' }}
+                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: true }} />
+                                    </div>
+                                    <div style={{ height: '38%', flexShrink: 0, borderTop: '2px solid #30363d', display: 'flex', flexDirection: 'column', background: '#010409' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: '#161b22', flexShrink: 0 }}>
+                                            <div style={{ display: 'flex', gap: 5 }}>{['#ff5f57','#ffbd2e','#28c840'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}</div>
+                                            <i className="fas fa-terminal" style={{ color: '#3572A5', fontSize: '.72rem' }}></i>
+                                            <span style={{ color: '#8b949e', fontSize: '.72rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Console Output</span>
+                                            {playOutput.length > 0 && <button onClick={() => setPlayOutput([])} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '.65rem', fontFamily: 'Poppins,sans-serif' }}>Clear</button>}
+                                        </div>
+                                        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', fontFamily: '"Fira Code",monospace', fontSize: '12px', lineHeight: 1.6 }}>
+                                            {playOutput.length === 0
+                                                ? <span style={{ color: '#4b5563' }}>▶  Click <strong style={{ color: '#fe730c' }}>Run</strong> to execute Python</span>
+                                                : playOutput.map((o, i) => (
+                                                    <div key={i} style={{ color: o.type === 'stderr' ? '#f87171' : o.type === 'info' ? '#60a5fa' : '#4ade80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{o.text}</div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ── R mode ── */}
+                            {playMode === 'r' && (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#161b22', borderBottom: '1px solid #30363d', flexShrink: 0 }}>
+                                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#198CE7', flexShrink: 0 }}></span>
+                                        <span style={{ color: '#8b949e', fontSize: '.72rem', fontFamily: 'Poppins,sans-serif' }}>R · powered by WebR (WebAssembly)</span>
+                                    </div>
+                                    <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                                        <CodeMirror value={playR} theme={oneDark} extensions={[cmJs()]}
+                                            onChange={v => setPlayR(v)}
+                                            style={{ fontSize: 13, height: '100%' }}
+                                            basicSetup={{ lineNumbers: true, foldGutter: true, autocompletion: false }} />
+                                    </div>
+                                    <div style={{ height: '38%', flexShrink: 0, borderTop: '2px solid #30363d', display: 'flex', flexDirection: 'column', background: '#010409' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', background: '#161b22', flexShrink: 0 }}>
+                                            <div style={{ display: 'flex', gap: 5 }}>{['#ff5f57','#ffbd2e','#28c840'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}</div>
+                                            <i className="fas fa-terminal" style={{ color: '#198CE7', fontSize: '.72rem' }}></i>
+                                            <span style={{ color: '#8b949e', fontSize: '.72rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Console Output</span>
+                                            {playOutput.length > 0 && <button onClick={() => setPlayOutput([])} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '.65rem', fontFamily: 'Poppins,sans-serif' }}>Clear</button>}
+                                        </div>
+                                        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', fontFamily: '"Fira Code",monospace', fontSize: '12px', lineHeight: 1.6 }}>
+                                            {playOutput.length === 0
+                                                ? <span style={{ color: '#4b5563' }}>▶  Click <strong style={{ color: '#fe730c' }}>Run</strong> to execute R</span>
+                                                : playOutput.map((o, i) => (
+                                                    <div key={i} style={{ color: o.type === 'stderr' ? '#f87171' : o.type === 'info' ? '#60a5fa' : '#4ade80', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{o.text}</div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

@@ -164,7 +164,9 @@ function App() {
                             <Route index                      element={<Learning />} />
                             <Route path="browse"             element={<BrowsePrograms />} />
                             <Route path="scores"             element={<LearnerScores />} />
-                            <Route path="code-practice"      element={<CodePractice />} />
+                            <Route path="code-practice"          element={<CodePractice />} />
+                            <Route path="code-practice/python"   element={<CodePractice initialMode="python" />} />
+                            <Route path="code-practice/r"        element={<CodePractice initialMode="r" />} />
                             <Route path="profile"            element={<LearnerProfile />} />
                             <Route path=":courseSlug"        element={<CourseLearner />} />
                         </Route>

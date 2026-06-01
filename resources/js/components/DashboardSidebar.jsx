@@ -80,7 +80,9 @@ const GROUPS = [
             { label: 'Browse Programs', to: '/dashboard/learning/browse',         icon: 'fas fa-graduation-cap', perm: null },
             { label: 'My Learning',     to: '/dashboard/learning',                icon: 'fas fa-book-reader', perm: ['learning', 'view'], end: true },
             { label: 'My Scores',       to: '/dashboard/learning/scores',         icon: 'fas fa-chart-bar',   perm: ['learning', 'view_scores'] },
-            { label: 'Code Playground', to: '/dashboard/learning/code-practice',  icon: 'fas fa-code',        perm: ['learning', 'view'] },
+            { label: 'Code Playground',        to: '/dashboard/learning/code-practice',        icon: 'fas fa-code',        perm: ['learning', 'view'] },
+            { label: 'Python Playground',      to: '/dashboard/learning/code-practice/python', icon: 'fas fa-python',      perm: ['learning', 'view'] },
+            { label: 'R Playground',           to: '/dashboard/learning/code-practice/r',      icon: 'fas fa-chart-bar',   perm: ['learning', 'view'] },
         ],
     },
 ];

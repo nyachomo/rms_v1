@@ -239,6 +239,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Lesson exam management (admin)
     Route::get('/admin/lessons/{lesson}/exam',                       [LessonExamController::class, 'show']);
     Route::put('/admin/lessons/{lesson}/exam/settings',              [LessonExamController::class, 'updateSettings']);
+    Route::delete('/admin/lessons/{lesson}/exam',                    [LessonExamController::class, 'destroyExam']);
     Route::post('/admin/lessons/{lesson}/exam/questions',            [LessonExamController::class, 'storeQuestion']);
     Route::put('/admin/lessons/{lesson}/exam/questions/{question}',  [LessonExamController::class, 'updateQuestion']);
     Route::delete('/admin/lessons/{lesson}/exam/questions/{question}',[LessonExamController::class, 'destroyQuestion']);

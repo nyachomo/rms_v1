@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CourseLesson;
+use App\Models\LessonExamAttempt;
 use App\Models\LessonExamOption;
 use App\Models\LessonExamQuestion;
+use App\Models\StudentProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -105,6 +107,17 @@ class LessonExamController extends Controller
         }
 
         return response()->json(['question' => $question->fresh()->load('options')]);
+    }
+
+    /** DELETE /api/admin/lessons/{lesson}/exam — wipes the entire exam + all student scores */
+    public function destroyExam(CourseLesson $lesson): JsonResponse
+    {
+        LessonExamQuestion::where('lesson_id', $lesson->id)->delete();
+        LessonExamAttempt::where('lesson_id', $lesson->id)->delete();
+        StudentProgress::where('lesson_id', $lesson->id)->delete();
+        $lesson->update(['pass_mark' => null, 'time_limit_minutes' => null]);
+
+        return response()->json(['message' => 'Exam and all student scores deleted.']);
     }
 
     /** DELETE /api/admin/lessons/{lesson}/exam/questions/{question} */

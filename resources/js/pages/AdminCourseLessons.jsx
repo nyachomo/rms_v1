@@ -191,9 +191,11 @@ function ExamModal({ lesson, token, onClose }) {
     const [loading,    setLoading]    = useState(true);
     const [savingPM,   setSavingPM]   = useState(false);
     const [pmSaved,    setPmSaved]    = useState(false);
-    const [editingQ,   setEditingQ]   = useState(null);
-    const [delQId,     setDelQId]     = useState(null);
-    const [deleting,   setDeleting]   = useState(false);
+    const [editingQ,      setEditingQ]      = useState(null);
+    const [delQId,        setDelQId]        = useState(null);
+    const [deleting,      setDeleting]      = useState(false);
+    const [delExamOpen,   setDelExamOpen]   = useState(false);
+    const [deletingExam,  setDeletingExam]  = useState(false);
 
     useEffect(() => {
         fetch(`/api/admin/lessons/${lesson.id}/exam`, { headers: { Authorization: `Bearer ${token}` } })
@@ -251,6 +253,15 @@ function ExamModal({ lesson, token, onClose }) {
         });
         setQuestions(prev => prev.filter(q => q.id !== delQId));
         setDelQId(null); setDeleting(false);
+    };
+
+    const confirmDeleteExam = async () => {
+        setDeletingExam(true);
+        await fetch(`/api/admin/lessons/${lesson.id}/exam`, {
+            method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        });
+        setDeletingExam(false);
+        onClose();
     };
 
     const examActive = passMark !== '' && Number(passMark) >= 1;
@@ -439,7 +450,23 @@ function ExamModal({ lesson, token, onClose }) {
                     )}
                 </div>
 
-                <div style={{ padding: '12px 24px', borderTop: '1px solid #f1f5f9', background: '#fafbfc', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+                <div style={{ padding: '12px 24px', borderTop: '1px solid #f1f5f9', background: '#fafbfc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                    {!delExamOpen ? (
+                        <button onClick={() => setDelExamOpen(true)}
+                            style={{ padding: '8px 16px', borderRadius: 9, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <i className="fas fa-trash"></i> Delete Entire Exam
+                        </button>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff5f5', border: '1.5px solid #fee2e2', borderRadius: 10, padding: '8px 14px' }}>
+                            <i className="fas fa-exclamation-triangle" style={{ color: '#dc2626', flexShrink: 0 }}></i>
+                            <span style={{ fontSize: '.82rem', color: '#374151' }}>Delete all questions <strong>and all student scores</strong>? This cannot be undone.</span>
+                            <button onClick={() => setDelExamOpen(false)} style={{ padding: '5px 12px', borderRadius: 7, border: '1.5px solid #e2e8f0', background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.8rem' }}>Cancel</button>
+                            <button onClick={confirmDeleteExam} disabled={deletingExam}
+                                style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: '#dc2626', color: '#fff', cursor: deletingExam ? 'not-allowed' : 'pointer', opacity: deletingExam ? .7 : 1, fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.8rem', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                {deletingExam ? <><i className="fas fa-spinner fa-spin"></i> Deleting…</> : <><i className="fas fa-trash"></i> Yes, Delete</>}
+                            </button>
+                        </div>
+                    )}
                     <button onClick={onClose} style={{ padding: '9px 22px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 600, fontSize: '.86rem' }}>Close</button>
                 </div>
             </div>

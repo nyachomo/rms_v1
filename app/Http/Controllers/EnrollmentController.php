@@ -192,6 +192,7 @@ class EnrollmentController extends Controller
         if ($request->filled('course_id')) $query->where('course_id', $request->course_id);
         if ($request->filled('intake_id')) $query->where('intake_id', $request->intake_id);
         if ($request->filled('school_id')) $query->where('school_id', $request->school_id);
+        if ($request->filled('class_id'))  $query->where('class_id',  $request->class_id);
 
         $perPage     = min((int) $request->get('per_page', 15), 500);
         $enrollments = $query->orderByDesc('created_at')->paginate($perPage);
