@@ -35,10 +35,35 @@ class LessonExamController extends Controller
             'time_limit_minutes' => 'nullable|integer|min:1|max:300',
         ]);
 
+        $oldPassMark = $lesson->pass_mark;
+        $newPassMark = $validated['pass_mark'];
+
         $lesson->update([
-            'pass_mark'          => $validated['pass_mark'],
+            'pass_mark'          => $newPassMark,
             'time_limit_minutes' => $validated['time_limit_minutes'],
         ]);
+
+        // Re-evaluate all existing attempts when pass mark changes
+        if ($newPassMark !== null && $oldPassMark !== $newPassMark) {
+            $attempts = LessonExamAttempt::where('lesson_id', $lesson->id)->get();
+
+            foreach ($attempts as $attempt) {
+                $nowPasses = $attempt->score >= $newPassMark;
+                $attempt->update(['passed' => $nowPasses]);
+
+                if ($nowPasses) {
+                    StudentProgress::updateOrCreate(
+                        ['user_id' => $attempt->user_id, 'lesson_id' => $lesson->id],
+                        ['completed_at' => now()]
+                    );
+                } else {
+                    // Pass mark was raised and student no longer qualifies — remove completion
+                    StudentProgress::where('user_id', $attempt->user_id)
+                        ->where('lesson_id', $lesson->id)
+                        ->delete();
+                }
+            }
+        }
 
         $fresh = $lesson->fresh();
         return response()->json([
