@@ -51,7 +51,7 @@ class LessonExamController extends Controller
     public function storeQuestion(Request $request, CourseLesson $lesson): JsonResponse
     {
         $validated = $request->validate([
-            'question'             => 'required|string|max:1000',
+            'question'             => 'required|string',
             'sort_order'           => 'integer|min:0',
             'options'              => 'required|array|min:2|max:6',
             'options.*.option_text'=> 'required|string|max:500',
@@ -82,7 +82,7 @@ class LessonExamController extends Controller
     public function updateQuestion(Request $request, CourseLesson $lesson, LessonExamQuestion $question): JsonResponse
     {
         $validated = $request->validate([
-            'question'             => 'required|string|max:1000',
+            'question'             => 'required|string',
             'sort_order'           => 'integer|min:0',
             'options'              => 'required|array|min:2|max:6',
             'options.*.option_text'=> 'required|string|max:500',
