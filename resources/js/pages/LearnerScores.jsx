@@ -260,7 +260,205 @@ function generateCertificate(studentName, courseTitle, avgScore) {
     if (win) { win.document.write(html); win.document.close(); }
 }
 
-function CourseSection({ course, studentName }) {
+function generateTranscript(course, user) {
+    const now     = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const refNo   = `TTI/TR/${now.getFullYear()}/${String(user?.id ?? 0).padStart(4,'0')}`;
+
+    const gradeRow = (pct, name, idx) => {
+        const rounded = pct !== null ? Math.round(pct) : null;
+        const score   = rounded !== null ? `${rounded}%` : '—';
+        const grade   = rounded === null ? '—'
+            : rounded >= 80 ? 'A' : rounded >= 70 ? 'B' : rounded >= 60 ? 'C' : rounded >= 50 ? 'D' : 'F';
+        const comment = rounded === null ? 'Not Attempted'
+            : rounded >= 80 ? 'Distinction' : rounded >= 70 ? 'Credit' : rounded >= 50 ? 'Pass' : 'Fail';
+        const commentColor = rounded === null ? '#9ca3af'
+            : rounded >= 80 ? '#15803d' : rounded >= 70 ? '#0369a1' : rounded >= 50 ? '#b45309' : '#b91c1c';
+        const gradeColor = rounded === null ? '#9ca3af'
+            : rounded >= 80 ? '#15803d' : rounded >= 70 ? '#0369a1' : rounded >= 60 ? '#b45309' : rounded >= 50 ? '#92400e' : '#b91c1c';
+        const bg = idx % 2 === 0 ? '#f8fafc' : '#fff';
+        return `
+        <tr style="background:${bg}">
+          <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#1e293b;border-bottom:1px solid #f1f5f9">${name}</td>
+          <td style="padding:8px 12px;font-size:13px;font-weight:800;text-align:center;color:#1e293b;border-bottom:1px solid #f1f5f9">${score}</td>
+          <td style="padding:8px 12px;font-size:12px;font-weight:700;text-align:center;color:${gradeColor};border-bottom:1px solid #f1f5f9">${grade}</td>
+          <td style="padding:8px 12px;font-size:12px;font-weight:700;text-align:center;color:${commentColor};border-bottom:1px solid #f1f5f9">${comment}</td>
+        </tr>`;
+    };
+
+    const moduleSummaryRows = course.modules.map((mod, idx) =>
+        gradeRow(mod.avg_score, mod.module_title, idx)
+    ).join('');
+
+    const allScores = course.modules.map(m => m.avg_score).filter(v => v !== null);
+    const courseAvg = allScores.length > 0 ? Math.round(allScores.reduce((s, v) => s + v, 0) / allScores.length) : null;
+    const courseColor = courseAvg === null ? '#9ca3af' : courseAvg >= 70 ? '#15803d' : courseAvg >= 50 ? '#b45309' : '#b91c1c';
+    const courseBg    = courseAvg === null ? '#f8fafc' : courseAvg >= 70 ? '#dcfce7' : courseAvg >= 50 ? '#fef9c3' : '#fee2e2';
+    const gradeLabel  = courseAvg === null ? 'N/A'
+        : courseAvg >= 80 ? 'Distinction'
+        : courseAvg >= 70 ? 'Credit'
+        : courseAvg >= 50 ? 'Pass'
+        : 'Fail';
+
+    const studentName  = user?.name  ?? 'Student';
+    const studentEmail = user?.email ?? '';
+    const courseTitle  = course.course_title;
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Transcript – ${studentName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Poppins:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  @page{size:A4 portrait;margin:0}
+  body{width:210mm;background:#fff;font-family:'Poppins',sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .page{width:210mm;min-height:297mm;padding:0;position:relative;background:#fff}
+  .header{background:#fff;padding:22px 32px 18px;display:flex;align-items:center;gap:18px;border-bottom:2px solid #e2e8f0}
+  .logo{width:100px;height:100px;object-fit:contain;border-radius:50%;flex-shrink:0}
+  .hd-text{flex:1}
+  .org{font-family:'Cinzel',serif;font-size:22px;font-weight:900;color:#081f4e;letter-spacing:.04em}
+  .sub{font-size:11px;color:#64748b;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
+  .hd-right{text-align:right}
+  .ref{font-size:10px;color:#64748b;letter-spacing:.06em}
+  .ref strong{color:#fe730c;display:block;font-size:11px;margin-bottom:2px}
+  .title-band{background:#fff;padding:8px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #e2e8f0}
+  .title-band h2{font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#081f4e;letter-spacing:.12em;text-transform:uppercase}
+  .title-band span{font-size:10px;color:#64748b;letter-spacing:.06em}
+  .student-card{margin:18px 32px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 20px;display:flex;gap:32px;align-items:flex-start}
+  .sc-col{flex:1}
+  .sc-label{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
+  .sc-value{font-size:13px;font-weight:600;color:#1e293b}
+  .sc-email{font-size:11px;color:#64748b}
+  .course-band{margin:0 32px 14px;background:#081f4e;border-radius:8px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+  .cb-title{font-size:14px;font-weight:700;color:#fff}
+  .cb-label{font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em}
+  .table-wrap{margin:0 32px 16px;border-radius:10px;overflow:hidden;border:1.5px solid #e2e8f0}
+  table{width:100%;border-collapse:collapse}
+  th{padding:9px 12px;font-size:11px;font-weight:700;color:#94a3b8;background:#f1f5f9;text-align:left;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #e2e8f0}
+  th.center{text-align:center}
+  .total-row{margin:0 32px 24px;background:${courseBg};border:2px solid ${courseColor}33;border-radius:10px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+  .tr-label{font-size:13px;font-weight:700;color:#1e293b}
+  .tr-label span{font-size:11px;font-weight:400;color:#64748b;display:block;margin-top:2px}
+  .tr-score{font-size:32px;font-weight:900;color:${courseColor};line-height:1}
+  .tr-grade{font-size:11px;font-weight:700;color:${courseColor};text-align:right;margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+  .footer{margin:0 32px;padding-top:12px;border-top:2.5px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:24px}
+  .sig-block{text-align:center}
+  .sig-line{width:150px;height:1.5px;background:#374151;margin:0 auto 4px}
+  .sig-lbl{font-size:10px;font-weight:700;color:#374151;letter-spacing:.12em;text-transform:uppercase}
+  .print-note{font-size:9px;color:#cbd5e1;text-align:center;margin:8px 32px 0;padding-bottom:16px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 32px 14px;font-size:10px;color:#64748b}
+  .leg-item{display:flex;align-items:center;gap:5px}
+  .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .bg-wm{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-wm img{width:520px;height:520px;object-fit:contain;opacity:.07;transform:rotate(-15deg)}
+  .page > *:not(.bg-wm){position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="bg-wm">
+    <img src="/logo/Logo.jpeg" alt="" />
+  </div>
+
+  <div class="header">
+    <img class="logo" src="/logo/Logo.jpeg" alt="Logo" onerror="this.style.display='none'" />
+    <div class="hd-text">
+      <div class="org">TECHSPHERE INSTITUTE</div>
+      <div class="sub">Official Academic Transcript</div>
+    </div>
+    <div class="hd-right">
+      <div class="ref"><strong>REF NO.</strong>${refNo}</div>
+      <div class="ref" style="margin-top:6px"><strong>PRINTED</strong>${dateStr}</div>
+    </div>
+  </div>
+
+  <div class="title-band">
+    <h2>Student Academic Transcript</h2>
+    <span>Confidential — For Official Use Only</span>
+  </div>
+
+  <div class="student-card">
+    <div class="sc-col">
+      <div class="sc-label">Student Name</div>
+      <div class="sc-value">${studentName}</div>
+    </div>
+    <div class="sc-col">
+      <div class="sc-label">Email Address</div>
+      <div class="sc-email">${studentEmail}</div>
+    </div>
+    <div class="sc-col">
+      <div class="sc-label">Course</div>
+      <div class="sc-value">${courseTitle}</div>
+    </div>
+    <div class="sc-col">
+      <div class="sc-label">Date of Issue</div>
+      <div class="sc-value">${dateStr}</div>
+    </div>
+  </div>
+
+  <div style="margin:0 32px 16px;border-radius:10px;overflow:hidden;border:1.5px solid #e2e8f0">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:#081f4e;print-color-adjust:exact;-webkit-print-color-adjust:exact">
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:left;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Module</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Score</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Grade</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${moduleSummaryRows}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#dcfce7;border:1px solid #86efac"></div> Pass</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#fee2e2;border:1px solid #fca5a5"></div> Fail</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#f8fafc;border:1px solid #e2e8f0"></div> Not Attempted</div>
+    <div style="margin-left:auto;color:#9ca3af">Grading: ≥80% Distinction · ≥70% Credit · ≥50% Pass · &lt;50% Fail</div>
+  </div>
+
+  <div class="total-row">
+    <div class="tr-label">
+      Overall Course Performance
+      <span>${courseTitle}</span>
+    </div>
+    <div style="text-align:right">
+      <div class="tr-score">${courseAvg !== null ? courseAvg+'%' : '—'}</div>
+      <div class="tr-grade">${gradeLabel}</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-lbl">Director</div>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#cbd5e1">
+      <div style="margin-bottom:4px">This transcript is issued by Techsphere Institute</div>
+      <div>and is valid only with an official stamp or signature.</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-lbl">Registrar</div>
+    </div>
+  </div>
+
+  <div class="print-note">Generated on ${now.toLocaleString('en-GB')} · ${refNo} · Techsphere Institute</div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},600);}</script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=1100');
+    if (win) { win.document.write(html); win.document.close(); }
+}
+
+function CourseSection({ course, studentName, user }) {
     const [open, setOpen] = useState(true);
 
     const avgColor = course.avg_score === null ? '#9ca3af'
@@ -313,6 +511,14 @@ function CourseSection({ course, studentName }) {
                                 Certificate
                             </span>
                         )}
+                        <button onClick={() => generateTranscript(course, user)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, border: 'none', background: 'linear-gradient(135deg,#0f766e,#0d9488)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(13,148,136,.25)', transition: 'opacity .2s' }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                            title="Download Transcript">
+                            <i className="fas fa-file-alt" style={{ fontSize: '.75rem' }}></i>
+                            Transcript
+                        </button>
                         <button onClick={() => setOpen(o => !o)}
                             style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem' }}>
                             <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
@@ -436,7 +642,7 @@ export default function LearnerScores() {
 
                     {/* Course sections */}
                     {!loading && !error && data.map(course => (
-                        <CourseSection key={course.course_id} course={course} studentName={user?.name || 'Student'} />
+                        <CourseSection key={course.course_id} course={course} studentName={user?.name || 'Student'} user={user} />
                     ))}
 
                 </div>

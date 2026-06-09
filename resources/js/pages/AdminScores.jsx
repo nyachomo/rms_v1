@@ -235,10 +235,18 @@ function generateTranscript(student, courseTitle, modules, manualAssessments = [
   .legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 32px 14px;font-size:10px;color:#64748b}
   .leg-item{display:flex;align-items:center;gap:5px}
   .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .bg-wm{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-wm img{width:520px;height:520px;object-fit:contain;opacity:.07;transform:rotate(-15deg)}
+  .page > *:not(.bg-wm){position:relative;z-index:1}
 </style>
 </head>
 <body>
 <div class="page">
+
+  <!-- Background logo watermark -->
+  <div class="bg-wm">
+    <img src="/logo/Logo.jpeg" alt="" />
+  </div>
 
   <!-- Header -->
   <div class="header">
@@ -283,11 +291,11 @@ function generateTranscript(student, courseTitle, modules, manualAssessments = [
   <div style="margin:0 32px 16px;border-radius:10px;overflow:hidden;border:1.5px solid #e2e8f0">
     <table style="width:100%;border-collapse:collapse">
       <thead>
-        <tr style="background:#081f4e">
-          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#e2e8f0;text-align:left;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Module</th>
-          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#e2e8f0;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Score</th>
-          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#e2e8f0;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Grade</th>
-          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#e2e8f0;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Comment</th>
+        <tr style="background:#081f4e;print-color-adjust:exact;-webkit-print-color-adjust:exact">
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:left;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Module</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Score</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Grade</th>
+          <th style="padding:9px 12px;font-size:11px;font-weight:700;color:#ffffff;text-align:center;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #fe730c">Comment</th>
         </tr>
       </thead>
       <tbody>
