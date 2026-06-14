@@ -8,6 +8,8 @@ use App\Models\Enrollment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class AdmissionLetterController extends Controller
 {
@@ -61,39 +63,78 @@ class AdmissionLetterController extends Controller
 
     public function serveSignature()
     {
-        $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
-        if (!$config->director_signature) {
-            abort(404);
+        try {
+            $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
+            if (!$config->director_signature) {
+                return response()->json(['message' => 'No signature set.'], 404);
+            }
+
+            // Try storage disk first
+            if (Storage::disk('public')->exists($config->director_signature)) {
+                $path = Storage::disk('public')->path($config->director_signature);
+            } else {
+                // Fallback: absolute path from storage_path
+                $path = storage_path('app/public/' . $config->director_signature);
+            }
+
+            if (!file_exists($path)) {
+                Log::error('Signature file not found: ' . $path);
+                return response()->json(['message' => 'Signature file not found.'], 404);
+            }
+
+            $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mime = match($ext) {
+                'png'  => 'image/png',
+                'gif'  => 'image/gif',
+                'webp' => 'image/webp',
+                default => 'image/jpeg',
+            };
+
+            return response(file_get_contents($path), 200, [
+                'Content-Type'  => $mime,
+                'Cache-Control' => 'private, max-age=3600',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('serveSignature error: ' . $e->getMessage());
+            return response()->json(['message' => 'Server error: ' . $e->getMessage()], 500);
         }
-        $path = storage_path('app/public/' . $config->director_signature);
-        if (!file_exists($path)) {
-            abort(404);
-        }
-        $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $mime = $ext === 'png' ? 'image/png' : ($ext === 'gif' ? 'image/gif' : 'image/jpeg');
-        return response()->file($path, ['Content-Type' => $mime]);
     }
 
     public function uploadSignature(Request $request)
     {
-        $request->validate(['signature' => 'required|image|max:2048']);
-        $path   = $request->file('signature')->store('signatures', 'public');
-        $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
+        try {
+            $request->validate(['signature' => 'required|image|max:4096']);
 
-        // Delete old signature file if it exists
-        if ($config->director_signature && \Illuminate\Support\Facades\Storage::disk('public')->exists($config->director_signature)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($config->director_signature);
+            // Ensure the signatures directory exists
+            Storage::disk('public')->makeDirectory('signatures');
+
+            $file   = $request->file('signature');
+            $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
+
+            // Delete old signature file if it exists
+            if ($config->director_signature && Storage::disk('public')->exists($config->director_signature)) {
+                Storage::disk('public')->delete($config->director_signature);
+            }
+
+            $path = $file->store('signatures', 'public');
+
+            if (!$path) {
+                return response()->json(['message' => 'Failed to store file. Check storage permissions.'], 500);
+            }
+
+            $config->update(['director_signature' => $path]);
+            return response()->json(['path' => $path, 'url' => url('/api/admission-letter/signature')]);
+        } catch (\Throwable $e) {
+            Log::error('uploadSignature error: ' . $e->getMessage());
+            return response()->json(['message' => 'Upload error: ' . $e->getMessage()], 500);
         }
-
-        $config->update(['director_signature' => $path]);
-        return response()->json(['path' => $path, 'url' => url('/api/admission-letter/signature')]);
     }
 
     public function deleteSignature()
     {
         $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
-        if ($config->director_signature && \Illuminate\Support\Facades\Storage::disk('public')->exists($config->director_signature)) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($config->director_signature);
+        if ($config->director_signature && Storage::disk('public')->exists($config->director_signature)) {
+            Storage::disk('public')->delete($config->director_signature);
         }
         $config->update(['director_signature' => null]);
         return response()->json(['message' => 'Signature removed.']);

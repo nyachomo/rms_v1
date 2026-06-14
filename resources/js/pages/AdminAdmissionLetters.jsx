@@ -140,10 +140,14 @@ export default function AdminAdmissionLetters() {
             const data = await r.json();
             if (!r.ok) { setSigMsg(data.message || 'Upload failed.'); return; }
             setConfig(prev => ({ ...prev, director_signature: data.path, signature_url: data.url }));
-            setSigBlobUrl(data.url);
+            // Load blob preview via authenticated request
+            fetch('/api/admission-letter/signature', { headers })
+                .then(r2 => r2.blob())
+                .then(blob => setSigBlobUrl(URL.createObjectURL(blob)))
+                .catch(() => setSigBlobUrl(data.url));
             setSigMsg('Signature uploaded.');
             setTimeout(() => setSigMsg(''), 3000);
-        } catch { setSigMsg('Network error.'); }
+        } catch (err) { setSigMsg('Network error: ' + err.message); }
         finally { setSigUploading(false); }
     };
 
