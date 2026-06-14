@@ -66,8 +66,8 @@ export default function Navbar() {
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                             {user && can('learning', 'view') && (
-                                <Link to="/learn" style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', color: '#fff', padding: '8px 16px', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <i className="fas fa-graduation-cap"></i> My Learning
+                                <Link to="/dashboard" style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', color: '#fff', padding: '8px 16px', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontSize: '.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <i className="fas fa-tachometer-alt"></i> My Dashboard
                                 </Link>
                             )}
                             {!user && (
@@ -89,7 +89,7 @@ export default function Navbar() {
                 <Link to="/courses" onClick={() => setMenuOpen(false)}><i className="fas fa-graduation-cap"></i> Our Courses/Programs</Link>
                 {/* <Link to="/ict-club" onClick={() => setMenuOpen(false)}><i className="fas fa-laptop-code"></i> ICT Club</Link> */}
                 <Link to="/contact" onClick={() => setMenuOpen(false)}><i className="fas fa-envelope"></i> Contact</Link>
-                {user && can('learning', 'view') && <Link to="/learn" onClick={() => setMenuOpen(false)}><i className="fas fa-graduation-cap"></i> My Learning</Link>}
+                {user && can('learning', 'view') && <Link to="/dashboard" onClick={() => setMenuOpen(false)}><i className="fas fa-tachometer-alt"></i> My Dashboard</Link>}
                 <Link to="/courses" onClick={() => setMenuOpen(false)}><i className="fas fa-pen-alt"></i> Enrol</Link>
                 {!user && <Link to="/login" onClick={() => setMenuOpen(false)}><i className="fas fa-sign-in-alt"></i> Login</Link>}
             </div>

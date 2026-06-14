@@ -78,6 +78,7 @@ import Dashboard from './pages/Dashboard';
 import AdminScores from './pages/AdminScores';
 import ManualGradebook from './pages/ManualGradebook';
 import TechsphereClasses from './pages/TechsphereClasses';
+import AdminAdmissionLetters from './pages/AdminAdmissionLetters';
 
 import '../css/app.css';
 
@@ -151,6 +152,7 @@ function App() {
                         <Route path="courses/:courseId/lessons" element={<AdminCourseLessons />} />
                         <Route path="classes"        element={<Classes />} />
                         <Route path="techsphere-classes" element={<TechsphereClasses />} />
+                        <Route path="admission-letters"  element={<AdminAdmissionLetters />} />
                         <Route path="profile"        element={<Profile />} />
                         <Route path="schools"        element={<Schools />} />
                         <Route path="school-categories" element={<SchoolCategories />} />

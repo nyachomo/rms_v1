@@ -12,12 +12,25 @@ const GROUPS = [
         ],
     },
     {
+        key: 'learning_portal',
+        label: 'Learning Portal',
+        icon: 'fas fa-book-reader',
+        items: [
+            { label: 'Browse Programs',   to: '/dashboard/learning/browse',               icon: 'fas fa-graduation-cap', perm: null },
+            { label: 'My Learning',       to: '/dashboard/learning',                      icon: 'fas fa-book-reader',    perm: ['learning', 'view'], end: true },
+            { label: 'My Scores',         to: '/dashboard/learning/scores',               icon: 'fas fa-chart-bar',      perm: ['learning', 'view_scores'] },
+            { label: 'Code Playground',   to: '/dashboard/learning/code-practice',        icon: 'fas fa-code',           perm: ['learning', 'view'] },
+            { label: 'Python Playground', to: '/dashboard/learning/code-practice/python', icon: 'fas fa-python',         perm: ['learning', 'view'] },
+            { label: 'R Playground',      to: '/dashboard/learning/code-practice/r',      icon: 'fas fa-chart-bar',      perm: ['learning', 'view'] },
+        ],
+    },
+    {
         key: 'people',
         label: 'People',
         icon: 'fas fa-users',
         items: [
-            { label: 'Students', to: '/dashboard/students',  icon: 'fas fa-user-graduate',                 perm: ['students', 'view'] },
-            { label: 'Teachers', to: '/dashboard/teachers', icon: 'fas fa-chalkboard-teacher',            perm: ['teachers', 'view'] },
+            { label: 'Students', to: '/dashboard/students',  icon: 'fas fa-user-graduate',       perm: ['students', 'view'] },
+            { label: 'Teachers', to: '/dashboard/teachers', icon: 'fas fa-chalkboard-teacher',   perm: ['teachers', 'view'] },
         ],
     },
     {
@@ -25,15 +38,16 @@ const GROUPS = [
         label: 'Academic',
         icon: 'fas fa-graduation-cap',
         items: [
-            { label: 'Classes',           to: '/dashboard/classes',           icon: 'fas fa-chalkboard',      perm: ['classes',           'view'] },
-            { label: 'Techsphere Classes', to: '/dashboard/techsphere-classes', icon: 'fas fa-laptop-code',   perm: ['techsphere_classes', 'view'] },
-            { label: 'Program Events',    to: '/dashboard/program-events',    icon: 'fas fa-calendar-alt',    perm: ['program_events',    'view'] },
-            { label: 'Courses',           to: '/dashboard/courses',           icon: 'fas fa-book-open',       perm: ['courses',           'view'] },
-            { label: 'Course Categories', to: '/dashboard/course-categories', icon: 'fas fa-tags',            perm: ['course_categories', 'view'] },
-            { label: 'Intakes',           to: '/dashboard/intakes',           icon: 'fas fa-calendar-check',  perm: ['intakes',           'view'] },
-            { label: 'Enrollments',       to: '/dashboard/enrollments',       icon: 'fas fa-file-alt',        perm: ['enrollments',       'view'] },
-            { label: 'Student Scores',    to: '/dashboard/student-scores',    icon: 'fas fa-graduation-cap',  perm: ['student_scores',    'view'] },
-            { label: 'Manual Gradebook',  to: '/dashboard/manual-gradebook',  icon: 'fas fa-table',           perm: ['student_scores',    'view'] },
+            { label: 'Classes',           to: '/dashboard/classes',           icon: 'fas fa-chalkboard',         perm: ['classes',             'view'] },
+            { label: 'Techsphere Classes', to: '/dashboard/techsphere-classes', icon: 'fas fa-laptop-code',      perm: ['techsphere_classes',  'view'] },
+            { label: 'Program Events',    to: '/dashboard/program-events',    icon: 'fas fa-calendar-alt',       perm: ['program_events',      'view'] },
+            { label: 'Courses',           to: '/dashboard/courses',           icon: 'fas fa-book-open',          perm: ['courses',             'view'] },
+            { label: 'Course Categories', to: '/dashboard/course-categories', icon: 'fas fa-tags',               perm: ['course_categories',   'view'] },
+            { label: 'Intakes',           to: '/dashboard/intakes',           icon: 'fas fa-calendar-check',     perm: ['intakes',             'view'] },
+            { label: 'Enrollments',       to: '/dashboard/enrollments',       icon: 'fas fa-file-alt',           perm: ['enrollments',         'view'] },
+            { label: 'Admission Letters', to: '/dashboard/admission-letters', icon: 'fas fa-envelope-open-text', perm: ['enrollments',         'view'] },
+            { label: 'Student Scores',    to: '/dashboard/student-scores',    icon: 'fas fa-graduation-cap',     perm: ['student_scores',      'view'] },
+            { label: 'Manual Gradebook',  to: '/dashboard/manual-gradebook',  icon: 'fas fa-table',              perm: ['student_scores',      'view'] },
         ],
     },
     {
@@ -70,19 +84,6 @@ const GROUPS = [
         items: [
             { label: 'Home Page', to: '/dashboard/homepage', icon: 'fas fa-home', perm: ['homepage', 'view'] },
             { label: 'Settings',  to: '/dashboard/settings', icon: 'fas fa-cog',  perm: ['settings', 'view'] },
-        ],
-    },
-    {
-        key: 'learning_portal',
-        label: 'Learning Portal',
-        icon: 'fas fa-book-reader',
-        items: [
-            { label: 'Browse Programs', to: '/dashboard/learning/browse',         icon: 'fas fa-graduation-cap', perm: null },
-            { label: 'My Learning',     to: '/dashboard/learning',                icon: 'fas fa-book-reader', perm: ['learning', 'view'], end: true },
-            { label: 'My Scores',       to: '/dashboard/learning/scores',         icon: 'fas fa-chart-bar',   perm: ['learning', 'view_scores'] },
-            { label: 'Code Playground',        to: '/dashboard/learning/code-practice',        icon: 'fas fa-code',        perm: ['learning', 'view'] },
-            { label: 'Python Playground',      to: '/dashboard/learning/code-practice/python', icon: 'fas fa-python',      perm: ['learning', 'view'] },
-            { label: 'R Playground',           to: '/dashboard/learning/code-practice/r',      icon: 'fas fa-chart-bar',   perm: ['learning', 'view'] },
         ],
     },
 ];
@@ -157,6 +158,13 @@ export default function DashboardSidebar() {
         }
         return null;
     }, [location.pathname]);
+
+    /* Auto-open the group that contains the current page */
+    useEffect(() => {
+        if (activeGroupKey) {
+            setOpenGroups(prev => ({ ...prev, [activeGroupKey]: true }));
+        }
+    }, [activeGroupKey]);
 
     /* All permitted nav items flattened — used in collapsed mode */
     const allItems = useMemo(() => {

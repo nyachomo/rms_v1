@@ -1546,7 +1546,7 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
 .db-sidebar-search-clear:hover { color: #fff; }
 
 /* ── Nav container ── */
-.db-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; padding: 0 12px; overflow-y: auto; }
+.db-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; padding: 0 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
 .db-nav-section-label {
   font-size: .65rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
   color: rgba(255,255,255,.25); padding: 14px 10px 6px;

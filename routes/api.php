@@ -30,6 +30,7 @@ use App\Http\Controllers\AdminScoreController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ManualGradebookController;
 use App\Http\Controllers\TechsphereClassController;
+use App\Http\Controllers\AdmissionLetterController;
 
 // Public routes
 Route::post('/contact',           [ContactController::class, 'send']);
@@ -274,6 +275,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/techsphere-classes/{techsphereClass}/meeting',               [TechsphereClassController::class, 'createMeeting']);
     Route::delete('/techsphere-classes/{techsphereClass}/meeting',             [TechsphereClassController::class, 'deleteMeeting']);
     Route::get('/techsphere-classes/{techsphereClass}/meeting/signature',      [TechsphereClassController::class, 'meetingSignature']);
+
+    // Admission Letters
+    Route::get('/admission-letter/config',                          [AdmissionLetterController::class, 'getConfig']);
+    Route::put('/admission-letter/config',                          [AdmissionLetterController::class, 'updateConfig']);
+    Route::get('/admission-letter/signature',                       [AdmissionLetterController::class, 'serveSignature']);
+    Route::post('/admission-letter/signature',                      [AdmissionLetterController::class, 'uploadSignature']);
+    Route::delete('/admission-letter/signature',                    [AdmissionLetterController::class, 'deleteSignature']);
+    Route::get('/admin/enrollments/{enrollment}/admission-letter',  [AdmissionLetterController::class, 'downloadAdmin']);
+    Route::get('/learning/admission-letter',                        [AdmissionLetterController::class, 'downloadStudent']);
 
     // Company settings
     Route::get('/settings',             [SettingController::class, 'show']);
