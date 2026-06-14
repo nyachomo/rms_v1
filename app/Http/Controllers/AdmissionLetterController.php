@@ -103,7 +103,19 @@ class AdmissionLetterController extends Controller
     public function uploadSignature(Request $request)
     {
         try {
-            $request->validate(['signature' => 'required|image|max:4096']);
+            $request->validate([
+                'signature' => [
+                    'required',
+                    'file',
+                    'max:4096',
+                    function ($attribute, $value, $fail) {
+                        $ext = strtolower($value->getClientOriginalExtension());
+                        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                            $fail('The signature must be a JPG, PNG, GIF, or WEBP image.');
+                        }
+                    },
+                ],
+            ]);
 
             // Ensure the signatures directory exists
             Storage::disk('public')->makeDirectory('signatures');
