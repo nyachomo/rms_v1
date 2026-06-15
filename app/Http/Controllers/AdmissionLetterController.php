@@ -473,7 +473,7 @@ HTML;
 <table width="100%" cellpadding="0" cellspacing="0" style="font-size:9.5px;color:#222;margin-top:4px;margin-bottom:8px;">
     <tr>
         <td style="text-align:center;font-size:15px;font-weight:700;color:#081f4e;padding-bottom:3px;">
-            MASTERY IN {$courseCode} {$courseTitle}
+            MASTERY IN {$courseTitleUpper}{$courseCodeUpper}
         </td>
     </tr>
     <tr>
