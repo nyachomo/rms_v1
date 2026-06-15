@@ -8,7 +8,6 @@ use App\Models\Enrollment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class AdmissionLetterController extends Controller
@@ -69,13 +68,7 @@ class AdmissionLetterController extends Controller
                 return response()->json(['message' => 'No signature set.'], 404);
             }
 
-            // Try storage disk first
-            if (Storage::disk('public')->exists($config->director_signature)) {
-                $path = Storage::disk('public')->path($config->director_signature);
-            } else {
-                // Fallback: absolute path from storage_path
-                $path = storage_path('app/public/' . $config->director_signature);
-            }
+            $path = storage_path('app/public/' . $config->director_signature);
 
             if (!file_exists($path)) {
                 Log::error('Signature file not found: ' . $path);
