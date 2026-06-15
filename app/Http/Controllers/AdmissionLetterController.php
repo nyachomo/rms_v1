@@ -103,39 +103,42 @@ class AdmissionLetterController extends Controller
     public function uploadSignature(Request $request)
     {
         try {
-            $request->validate([
-                'signature' => [
-                    'required',
-                    'file',
-                    'max:4096',
-                    function ($attribute, $value, $fail) {
-                        $ext = strtolower($value->getClientOriginalExtension());
-                        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-                            $fail('The signature must be a JPG, PNG, GIF, or WEBP image.');
-                        }
-                    },
-                ],
-            ]);
+            if (!$request->hasFile('signature')) {
+                return response()->json(['message' => 'No file uploaded.'], 422);
+            }
 
-            // Ensure the signatures directory exists
-            Storage::disk('public')->makeDirectory('signatures');
+            $file = $request->file('signature');
+            $ext  = strtolower($file->getClientOriginalExtension());
 
-            $file   = $request->file('signature');
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                return response()->json(['message' => 'File must be JPG, PNG, GIF, or WEBP.'], 422);
+            }
+
+            $filename   = 'signatures/sig_' . uniqid() . '.' . $ext;
+            $storageDir = storage_path('app/public/signatures');
+            $fullPath   = storage_path('app/public/' . $filename);
+
+            // Use native PHP to avoid finfo dependency on servers without fileinfo extension
+            if (!is_dir($storageDir)) {
+                mkdir($storageDir, 0755, true);
+            }
+
+            if (!move_uploaded_file($file->getRealPath(), $fullPath)) {
+                return response()->json(['message' => 'Failed to save file. Check storage permissions.'], 500);
+            }
+
             $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
 
             // Delete old signature file if it exists
-            if ($config->director_signature && Storage::disk('public')->exists($config->director_signature)) {
-                Storage::disk('public')->delete($config->director_signature);
+            if ($config->director_signature) {
+                $oldPath = storage_path('app/public/' . $config->director_signature);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
             }
 
-            $path = $file->store('signatures', 'public');
-
-            if (!$path) {
-                return response()->json(['message' => 'Failed to store file. Check storage permissions.'], 500);
-            }
-
-            $config->update(['director_signature' => $path]);
-            return response()->json(['path' => $path, 'url' => url('/api/admission-letter/signature')]);
+            $config->update(['director_signature' => $filename]);
+            return response()->json(['path' => $filename, 'url' => url('/api/admission-letter/signature')]);
         } catch (\Throwable $e) {
             Log::error('uploadSignature error: ' . $e->getMessage());
             return response()->json(['message' => 'Upload error: ' . $e->getMessage()], 500);
@@ -145,8 +148,11 @@ class AdmissionLetterController extends Controller
     public function deleteSignature()
     {
         $config = AdmissionLetterConfig::firstOrCreate(['id' => 1]);
-        if ($config->director_signature && Storage::disk('public')->exists($config->director_signature)) {
-            Storage::disk('public')->delete($config->director_signature);
+        if ($config->director_signature) {
+            $path = storage_path('app/public/' . $config->director_signature);
+            if (file_exists($path)) {
+                @unlink($path);
+            }
         }
         $config->update(['director_signature' => null]);
         return response()->json(['message' => 'Signature removed.']);
