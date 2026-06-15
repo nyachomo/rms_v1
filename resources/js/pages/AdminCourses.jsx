@@ -255,10 +255,10 @@ function CurriculumModal({ item, courseId, onSave, onClose, token }) {
 
     return (
         <div className="modal-overlay" style={{ zIndex: 3000 }} onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 540 }}>
+            <div className="modal-box" style={{ maxWidth: 820, width: '95vw' }}>
                 <div className="modal-header"><h3>{isEdit ? 'Edit Section' : 'Add Curriculum Section'}</h3><button className="modal-close" onClick={onClose}><i className="fas fa-times"></i></button></div>
-                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12 }}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18, padding: '28px 32px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 16 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>Week / Module label *</label>
                             <div className="profile-input-wrap"><input value={weekLabel} onChange={e => setWeekLabel(e.target.value)} placeholder="Week 1–2" /></div>
@@ -275,7 +275,7 @@ function CurriculumModal({ item, courseId, onSave, onClose, token }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>Topics — one per line</label>
                         <div className="profile-input-wrap profile-textarea-wrap">
-                            <textarea rows={5} value={topicsText} onChange={e => setTopicsText(e.target.value)} placeholder={'HTML5 semantic markup\nCSS3, Flexbox & Grid\nJavaScript ES6+'} style={{ resize: 'vertical' }} />
+                            <textarea rows={12} value={topicsText} onChange={e => setTopicsText(e.target.value)} placeholder={'HTML5 semantic markup\nCSS3, Flexbox & Grid\nJavaScript ES6+'} style={{ resize: 'vertical' }} />
                         </div>
                     </div>
                 </div>
