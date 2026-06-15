@@ -255,9 +255,9 @@ function CurriculumModal({ item, courseId, onSave, onClose, token }) {
 
     return (
         <div className="modal-overlay" style={{ zIndex: 3000 }} onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 820, width: '95vw' }}>
+            <div className="modal-box" style={{ maxWidth: 820, width: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                 <div className="modal-header"><h3>{isEdit ? 'Edit Section' : 'Add Curriculum Section'}</h3><button className="modal-close" onClick={onClose}><i className="fas fa-times"></i></button></div>
-                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18, padding: '28px 32px' }}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18, padding: '28px 32px', overflowY: 'auto', flex: 1 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 16 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <label style={{ fontSize: '.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px', fontFamily: 'Poppins, sans-serif' }}>Week / Module label *</label>
