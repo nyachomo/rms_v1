@@ -292,8 +292,10 @@ HTML;
         $classStartDate  = $config->class_start_date
             ? Carbon::parse($config->class_start_date)->format('d M Y')
             : '—';
-        $courseTitle = $course?->title ?? '—';
-        $courseCode  = $course?->category ?? '';
+        $courseTitle      = $course?->title ?? '—';
+        $courseTitleUpper = strtoupper($courseTitle);
+        $courseCode       = $course?->category ?? '';
+        $courseCodeUpper  = $courseCode ? ' (' . strtoupper($courseCode) . ')' : '';
         $zoomLink    = htmlspecialchars($config->zoom_link ?? '—');
         $meetingId   = htmlspecialchars($config->meeting_id ?? '—');
         $passcode    = htmlspecialchars($config->zoom_passcode ?? '—');
@@ -320,13 +322,13 @@ HTML;
     <tr><td colspan="2" style="padding-bottom:8px;">Dear {$firstName},</td></tr>
     <tr>
         <td colspan="2" style="padding-bottom:10px;">
-            <strong><u>SUBJECT: ADMISSION INTO {$courseCode} {$courseTitle}</u></strong>
+            <strong><u>SUBJECT: ADMISSION INTO {$courseTitleUpper}{$courseCodeUpper}</u></strong>
         </td>
     </tr>
     <tr>
         <td colspan="2" style="padding-bottom:10px;line-height:1.65;">
             Congratulations on being awarded a scholarship to join {$institutionName} and
-            for expressing interest in our <strong>{$courseCode} {$courseTitle}!</strong>
+            for expressing interest in our <strong>{$courseTitleUpper}{$courseCodeUpper}!</strong>
             We are excited about the possibility of having you in our learning community and commend
             your enthusiasm to gain valuable programming skills.
         </td>
