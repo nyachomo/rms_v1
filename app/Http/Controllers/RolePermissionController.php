@@ -38,6 +38,8 @@ class RolePermissionController extends Controller
         'settings'          => 'Settings',
         // Learning Portal
         'learning'          => 'Learning Portal',
+        // Student Documents
+        'admission_letter'  => 'Admission Letter',
     ];
 
     /** Per-module allowed actions — mirrors what the UI actually supports */
@@ -69,6 +71,8 @@ class RolePermissionController extends Controller
         'settings'          => ['view', 'update'],
         // Learning Portal
         'learning'          => ['view', 'view_scores', 'manage'],
+        // Student Documents
+        'admission_letter'  => ['view', 'download'],
     ];
 
     /**

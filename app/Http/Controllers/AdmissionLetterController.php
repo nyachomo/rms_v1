@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\AdmissionLetterConfig;
 use App\Models\CompanySetting;
 use App\Models\Enrollment;
+use App\Models\RolePermission;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AdmissionLetterController extends Controller
@@ -158,6 +160,17 @@ class AdmissionLetterController extends Controller
 
     public function downloadStudent(Request $request)
     {
+        $user = Auth::user();
+        if ($user && $user->role_id !== null) {
+            $hasPermission = RolePermission::where('role_id', $user->role_id)
+                ->where('module', 'admission_letter')
+                ->where('action', 'download')
+                ->exists();
+            if (!$hasPermission) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        }
+
         $userId     = $request->user()?->id;
         $enrollment = Enrollment::query()
             ->where('user_id', '=', $userId)

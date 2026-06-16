@@ -104,7 +104,7 @@ export default function Learning() {
         <div className="db-content" style={{ overflowY: 'auto', padding: '28px 28px 48px', flex: 1 }}>
 
                     {/* ── Admission Letter Banner ── */}
-                    <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', borderRadius: 12, padding: '16px 22px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                    {can('admission_letter', 'view') && <div style={{ background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', borderRadius: 12, padding: '16px 22px', marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                             <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(254,115,12,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <i className="fas fa-envelope-open-text" style={{ color: '#fe730c', fontSize: '1.1rem' }}></i>
@@ -114,7 +114,7 @@ export default function Learning() {
                                 <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem', marginTop: 2 }}>Download your official admission letter (requires approved enrollment).</div>
                             </div>
                         </div>
-                        <button
+                        {can('admission_letter', 'download') && <button
                             onClick={downloadAdmissionLetter}
                             disabled={dlLoading}
                             style={{ background: '#fe730c', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 700, fontSize: '.83rem', cursor: dlLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, opacity: dlLoading ? .75 : 1 }}
@@ -122,8 +122,8 @@ export default function Learning() {
                             {dlLoading
                                 ? <><i className="fas fa-spinner fa-spin"></i> Generating…</>
                                 : <><i className="fas fa-download"></i> Download Letter</>}
-                        </button>
-                    </div>
+                        </button>}
+                    </div>}
 
                     {/* ── Status filter tabs ── */}
                     <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 18, scrollbarWidth: 'none' }}>
