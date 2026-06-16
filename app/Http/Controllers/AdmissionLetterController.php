@@ -198,7 +198,7 @@ class AdmissionLetterController extends Controller
 
         $enrollments = Enrollment::where('user_id', Auth::id())
             ->where('status', 'approved')
-            ->with(['course:id,title,image_url,icon,icon_class', 'intake:id,name'])
+            ->with(['course:id,title,image_url,icon,icon_class', 'intake:id,intake_name'])
             ->latest()
             ->get(['id', 'course_id', 'intake_id', 'created_at']);
 

@@ -106,10 +106,10 @@ export default function StudentAdmissionLetter() {
                                     <div style={{ fontWeight: 700, fontSize: '.92rem', color: '#111827', fontFamily: 'Poppins,sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {course?.title ?? 'Course'}
                                     </div>
-                                    {intake?.name && (
+                                    {intake?.intake_name && (
                                         <div style={{ color: '#6b7280', fontSize: '.78rem', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
                                             <i className="fas fa-calendar-alt" style={{ fontSize: '.7rem' }}></i>
-                                            {intake.name}
+                                            {intake.intake_name}
                                         </div>
                                     )}
                                 </div>
