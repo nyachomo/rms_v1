@@ -282,8 +282,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admission-letter/signature',                       [AdmissionLetterController::class, 'serveSignature']);
     Route::post('/admission-letter/signature',                      [AdmissionLetterController::class, 'uploadSignature']);
     Route::delete('/admission-letter/signature',                    [AdmissionLetterController::class, 'deleteSignature']);
-    Route::get('/admin/enrollments/{enrollment}/admission-letter',  [AdmissionLetterController::class, 'downloadAdmin']);
-    Route::get('/learning/admission-letter',                        [AdmissionLetterController::class, 'downloadStudent']);
+    Route::get('/admin/enrollments/{enrollment}/admission-letter',           [AdmissionLetterController::class, 'downloadAdmin']);
+    Route::get('/learning/admission-letter',                                  [AdmissionLetterController::class, 'downloadStudent']);
+    Route::get('/learning/my-approved-enrollments',                           [AdmissionLetterController::class, 'myApprovedEnrollments']);
+    Route::get('/learning/enrollments/{enrollment}/admission-letter',         [AdmissionLetterController::class, 'downloadStudentById']);
 
     // Company settings
     Route::get('/settings',             [SettingController::class, 'show']);

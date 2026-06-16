@@ -158,20 +158,13 @@ class AdmissionLetterController extends Controller
         return $this->generatePdf($enrollment);
     }
 
-    public function downloadStudent(Request $request)
+    public function downloadStudent()
     {
-        $user = Auth::user();
-        if ($user && $user->role_id !== null) {
-            $hasPermission = RolePermission::where('role_id', $user->role_id)
-                ->where('module', 'admission_letter')
-                ->where('action', 'download')
-                ->exists();
-            if (!$hasPermission) {
-                return response()->json(['message' => 'Access denied.'], 403);
-            }
+        if (!$this->hasAdmissionPermission('download')) {
+            return response()->json(['message' => 'Access denied.'], 403);
         }
 
-        $userId     = $request->user()?->id;
+        $userId     = Auth::id();
         $enrollment = Enrollment::query()
             ->where('user_id', '=', $userId)
             ->where('status', '=', 'approved')
@@ -185,6 +178,50 @@ class AdmissionLetterController extends Controller
 
         return $this->generatePdf($enrollment);
     }
+
+    private function hasAdmissionPermission(string $action): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+        if ($user->role_id === null) return true; // super-admin
+        return RolePermission::where('role_id', $user->role_id)
+            ->where('module', 'admission_letter')
+            ->where('action', $action)
+            ->exists();
+    }
+
+    public function myApprovedEnrollments()
+    {
+        if (!$this->hasAdmissionPermission('view')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        $enrollments = Enrollment::where('user_id', Auth::id())
+            ->where('status', 'approved')
+            ->with(['course:id,title,image_url,icon,icon_class', 'intake:id,name'])
+            ->latest()
+            ->get(['id', 'course_id', 'intake_id', 'created_at']);
+
+        return response()->json($enrollments);
+    }
+
+    public function downloadStudentById(Enrollment $enrollment)
+    {
+        if (!$this->hasAdmissionPermission('download')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        if ($enrollment->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($enrollment->status !== 'approved') {
+            return response()->json(['message' => 'Enrollment is not approved.'], 422);
+        }
+
+        return $this->generatePdf($enrollment);
+    }
+
 
     private function generatePdf(Enrollment $enrollment)
     {
