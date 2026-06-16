@@ -265,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Techsphere Classes
     Route::get('/techsphere-classes/student-role-users',                       [TechsphereClassController::class, 'studentRoleUsers']);
+    Route::get('/techsphere-classes/my-classes',                               [TechsphereClassController::class, 'myClasses']);
     Route::get('/techsphere-classes',                                          [TechsphereClassController::class, 'index']);
     Route::post('/techsphere-classes',                                         [TechsphereClassController::class, 'store']);
     Route::put('/techsphere-classes/{techsphereClass}',                        [TechsphereClassController::class, 'update']);

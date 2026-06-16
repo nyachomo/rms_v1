@@ -40,6 +40,8 @@ class RolePermissionController extends Controller
         'learning'          => 'Learning Portal',
         // Student Documents
         'admission_letter'  => 'Admission Letter',
+        // Techsphere Classes
+        'techsphere_classes' => 'Techsphere Classes',
     ];
 
     /** Per-module allowed actions — mirrors what the UI actually supports */
@@ -73,6 +75,8 @@ class RolePermissionController extends Controller
         'learning'          => ['view', 'view_scores', 'manage'],
         // Student Documents
         'admission_letter'  => ['view', 'download'],
+        // Techsphere Classes
+        'techsphere_classes' => ['view', 'create', 'edit', 'delete', 'join'],
     ];
 
     /**

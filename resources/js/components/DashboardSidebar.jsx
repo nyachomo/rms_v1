@@ -18,6 +18,7 @@ const GROUPS = [
         items: [
             { label: 'Browse Programs',   to: '/dashboard/learning/browse',               icon: 'fas fa-graduation-cap', perm: null },
             { label: 'My Learning',       to: '/dashboard/learning',                      icon: 'fas fa-book-reader',    perm: ['learning', 'view'], end: true },
+            { label: 'My Classes',        to: '/dashboard/my-techsphere-classes',          icon: 'fas fa-laptop-code',    perm: ['techsphere_classes', 'join'] },
             { label: 'Admission Letter',  to: '/dashboard/learning/admission-letter',      icon: 'fas fa-envelope-open-text', perm: ['admission_letter', 'view'] },
             { label: 'My Scores',         to: '/dashboard/learning/scores',               icon: 'fas fa-chart-bar',      perm: ['learning', 'view_scores'] },
             { label: 'Code Playground',   to: '/dashboard/learning/code-practice',        icon: 'fas fa-code',           perm: ['learning', 'view'] },

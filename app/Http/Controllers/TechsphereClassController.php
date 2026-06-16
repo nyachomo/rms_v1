@@ -133,6 +133,18 @@ class TechsphereClassController extends Controller
         return response()->json(['message' => 'Techsphere class deleted successfully.']);
     }
 
+    /* ── Student: enrolled classes for the authenticated user ── */
+    public function myClasses(Request $request): JsonResponse
+    {
+        $classes = $request->user()
+            ->techsphereClasses()
+            ->with(['teachers:id,name,email'])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($classes);
+    }
+
     /* ── Zoom: create a meeting for this class ── */
     public function createMeeting(TechsphereClass $techsphereClass): JsonResponse
     {
