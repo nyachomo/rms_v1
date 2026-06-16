@@ -79,6 +79,7 @@ import AdminScores from './pages/AdminScores';
 import ManualGradebook from './pages/ManualGradebook';
 import TechsphereClasses from './pages/TechsphereClasses';
 import AdminAdmissionLetters from './pages/AdminAdmissionLetters';
+import StudentAdmissionLetter from './pages/StudentAdmissionLetter';
 
 import '../css/app.css';
 
@@ -169,6 +170,7 @@ function App() {
                             <Route path="code-practice"          element={<CodePractice />} />
                             <Route path="code-practice/python"   element={<CodePractice initialMode="python" />} />
                             <Route path="code-practice/r"        element={<CodePractice initialMode="r" />} />
+                            <Route path="admission-letter"   element={<StudentAdmissionLetter />} />
                             <Route path="profile"            element={<LearnerProfile />} />
                             <Route path=":courseSlug"        element={<CourseLearner />} />
                         </Route>
