@@ -311,23 +311,11 @@ function ZoomMeetingModal({ cls, onClose, token }) {
                 const el = document.getElementById('zoomSDKRoot');
                 if (!el) throw new Error('Meeting container not found in DOM.');
 
-                // viewSizes = VIDEO panel only (excludes Zoom's own top bar ~45px + controls ~72px)
-                // Our custom header is ~60px; total to subtract = 60 + 45 + 72 = 177
-                const w = window.innerWidth;
-                const h = Math.max(window.innerHeight - 177, 400);
-
                 await client.init({
                     zoomAppRoot: el,
                     language:    'en-US',
-                    assetPath:   `https://source.zoom.us/6.0.0/lib/av`,
-                    customize: {
-                        video: {
-                            isResizable: true,
-                            viewSizes: {
-                                default: { width: w, height: h },
-                            },
-                        },
-                    },
+                    patchJsMedia: true,
+                    assetPath:   `${window.location.origin}/zoom/lib/av`,
                 });
 
                 if (!active) return;
