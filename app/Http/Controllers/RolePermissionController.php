@@ -76,7 +76,7 @@ class RolePermissionController extends Controller
         // Student Documents
         'admission_letter'  => ['view', 'download'],
         // Techsphere Classes
-        'techsphere_classes' => ['view', 'create', 'edit', 'delete', 'join'],
+        'techsphere_classes' => ['view', 'create', 'update', 'delete', 'join'],
     ];
 
     /**
