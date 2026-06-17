@@ -6,6 +6,7 @@ use App\Models\AdmissionLetterConfig;
 use App\Models\CompanySetting;
 use App\Models\Enrollment;
 use App\Models\FeePayment;
+use App\Models\TechsphereClass;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -142,6 +143,14 @@ class FeePaymentController extends Controller
             ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath))
             : null;
 
+        // Look up the techsphere class for this student
+        $techsphereClass = null;
+        if ($enrollment->user_id) {
+            $techsphereClass = TechsphereClass::whereHas('enrolledUsers', function ($q) use ($enrollment) {
+                $q->where('users.id', $enrollment->user_id);
+            })->first();
+        }
+
         $credit  = (float) $allPayments->sum('amount_paid');
         $debit   = (float) ($enrollment->course_fee ?? 0);
         $balance = $debit - $credit;
@@ -149,11 +158,12 @@ class FeePaymentController extends Controller
         $html = $this->buildReceiptHtml(
             $enrollment, $payment, $allPayments,
             $config, $institutionName, $address, $website, $email, $phone,
-            $logoData, $credit, $debit, $balance
+            $logoData, $credit, $debit, $balance, $techsphereClass
         );
 
         $pdf      = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
-        $filename = 'Receipt_' . ($payment->payment_ref_no ?? $payment->id) . '.pdf';
+        $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $enrollment->name);
+        $filename = 'Receipt_' . ($payment->payment_ref_no ?? $payment->id) . '_' . $safeName . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -171,20 +181,22 @@ class FeePaymentController extends Controller
         ?string $logoData,
         float $credit,
         float $debit,
-        float $balance
+        float $balance,
+        ?TechsphereClass $techsphereClass = null
     ): string {
         $logoHtml = $logoData
             ? "<img src=\"{$logoData}\" style=\"width:90px;height:90px;border-radius:50%;object-fit:cover;\" />"
             : "<div style=\"width:90px;height:90px;border-radius:50%;background:#081f4e;text-align:center;line-height:90px;\"><span style=\"color:#fff;font-size:36px;font-weight:800;\">T</span></div>";
 
-        $receiptNo  = htmlspecialchars($payment->payment_ref_no ?? "#{$payment->id}");
-        $datePaid   = Carbon::parse($payment->date_paid)->format('Y-m-d');
-        $amountPaid = number_format($payment->amount_paid, 0);
-        $courseName = htmlspecialchars($enrollment->course?->title ?? '—');
-        $intakeName = htmlspecialchars($enrollment->intake?->intake_name ?? '—');
-        $studentName = htmlspecialchars($enrollment->name);
-        $balanceAmt  = number_format(abs($balance), 2);
-        $balanceAt   = Carbon::parse($payment->created_at ?? now())->format('Y-m-d H:i:s');
+        $receiptNo       = htmlspecialchars($payment->payment_ref_no ?? "#{$payment->id}");
+        $datePaid        = Carbon::parse($payment->date_paid)->format('Y-m-d');
+        $amountPaid      = number_format($payment->amount_paid, 0);
+        $courseName      = htmlspecialchars($enrollment->course?->title ?? '—');
+        $intakeName      = htmlspecialchars($enrollment->intake?->intake_name ?? '—');
+        $studentName     = htmlspecialchars($enrollment->name);
+        $tsClassName     = htmlspecialchars($techsphereClass?->name ?? 'NA');
+        $balanceAmt      = number_format(abs($balance), 2);
+        $balanceAt       = Carbon::parse($payment->created_at ?? now())->format('Y-m-d H:i:s');
 
         $mpesaBizName = htmlspecialchars($config->mpesa_business_name ?? 'Techsphere Institute');
         $mpesaPaybill = htmlspecialchars($config->mpesa_paybill       ?? '522533');
@@ -279,7 +291,8 @@ HTML;
         <div class="info-block">
             <strong>Student Name:</strong> {$studentName}<br/>
             <strong>Course:</strong> {$courseName}<br/>
-            <strong>Class:</strong> {$intakeName}
+            <strong>Class:</strong> {$intakeName}<br/>
+            <strong>Techsphere Class:</strong> {$tsClassName}
         </div>
     </td>
     <td style="vertical-align:top;width:45%;text-align:right;">
