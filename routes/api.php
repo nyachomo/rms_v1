@@ -31,6 +31,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ManualGradebookController;
 use App\Http\Controllers\TechsphereClassController;
 use App\Http\Controllers\AdmissionLetterController;
+use App\Http\Controllers\FeePaymentController;
 
 // Public routes
 Route::post('/contact',           [ContactController::class, 'send']);
@@ -287,6 +288,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/learning/admission-letter',                                  [AdmissionLetterController::class, 'downloadStudent']);
     Route::get('/learning/my-approved-enrollments',                           [AdmissionLetterController::class, 'myApprovedEnrollments']);
     Route::get('/learning/enrollments/{enrollment}/admission-letter',         [AdmissionLetterController::class, 'downloadStudentById']);
+
+    // Fee Management
+    Route::get('/fee-management',                                                    [FeePaymentController::class, 'index']);
+    Route::patch('/fee-management/enrollments/{enrollment}/fee',                     [FeePaymentController::class, 'updateCourseFee']);
+    Route::get('/fee-management/enrollments/{enrollment}/payments',                  [FeePaymentController::class, 'payments']);
+    Route::post('/fee-management/enrollments/{enrollment}/payments',                 [FeePaymentController::class, 'store']);
+    Route::delete('/fee-management/enrollments/{enrollment}/payments/{payment}',     [FeePaymentController::class, 'destroy']);
+    Route::get('/fee-management/enrollments/{enrollment}/payments/{payment}/receipt',[FeePaymentController::class, 'downloadReceipt']);
 
     // Company settings
     Route::get('/settings',             [SettingController::class, 'show']);

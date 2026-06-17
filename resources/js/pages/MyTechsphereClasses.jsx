@@ -104,7 +104,6 @@ function ZoomMeetingModal({ cls, onClose, token }) {
                     </div>
                     <div>
                         <div style={{ fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.95rem', color: '#fff' }}>{cls.name}</div>
-                        <div style={{ fontFamily: 'Poppins,sans-serif', fontSize: '.7rem', color: 'rgba(255,255,255,.45)' }}>Meeting ID: {cls.zoom_meeting_id}</div>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
