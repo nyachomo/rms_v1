@@ -109,7 +109,7 @@ class FeePaymentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $payment->delete();
+        FeePayment::destroy($payment->id);
 
         $credit  = (float) $enrollment->feePayments()->sum('amount_paid');
         $debit   = (float) ($enrollment->course_fee ?? 0);
@@ -289,8 +289,8 @@ HTML;
         <div class="info-block">
             <strong>Student Name:</strong> {$studentName}<br/>
             <strong>Course:</strong> {$courseName}<br/>
-            <strong>Class:</strong> {$intakeName}<br/>
-            <strong>Techsphere Class:</strong> {$tsClassName}
+            <strong>Intake:</strong> {$intakeName}<br/>
+            <strong>Class:</strong> {$tsClassName}
         </div>
     </td>
     <td style="vertical-align:top;width:45%;text-align:right;">
