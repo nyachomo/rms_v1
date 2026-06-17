@@ -1,32 +1,26 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PageTitleContext } from '../components/LearningLayout';
 import AccessDenied from '../components/AccessDenied';
 
-const LEVEL_COLORS = {
-    beginner:     { bg: '#d1fae5', color: '#065f46' },
-    intermediate: { bg: '#ede9fe', color: '#5b21b6' },
-    advanced:     { bg: '#dbeafe', color: '#1e40af' },
-    mastery:      { bg: '#fce7f3', color: '#9d174d' },
+const PROGRESS_STATUS = (pct) => {
+    if (pct === 100) return { label: 'Completed',   bg: '#d1fae5', color: '#065f46' };
+    if (pct > 0)     return { label: 'In Progress',  bg: '#dbeafe', color: '#1e40af' };
+    return               { label: 'Not Started',  bg: '#f1f5f9', color: '#475569' };
 };
-const levelStyle = lvl => LEVEL_COLORS[lvl?.toLowerCase()] ?? { bg: '#f1f5f9', color: '#475569' };
-
-const BADGE_COLORS = {
-    new:        { bg: '#10b981', color: '#fff' },
-    hot:        { bg: '#ef4444', color: '#fff' },
-    bestseller: { bg: '#f59e0b', color: '#fff' },
-    popular:    { bg: '#3b82f6', color: '#fff' },
-    featured:   { bg: '#8b5cf6', color: '#fff' },
-};
-const badgeStyle = b => BADGE_COLORS[b?.toLowerCase()] ?? { bg: '#6b7280', color: '#fff' };
 
 export default function Learning() {
     const { token, can, loading: authLoading } = useAuth();
+    const { setPageTitle } = useContext(PageTitleContext);
     const [enrollments, setEnrollments] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [apiError, setApiError]       = useState('');
     const [search, setSearch]           = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    useEffect(() => { setPageTitle('My Learning'); }, []);
+
     useEffect(() => {
         if (authLoading || !token) return;
         fetch('/api/learning/my-courses', {
@@ -43,6 +37,21 @@ export default function Learning() {
             .finally(() => setLoading(false));
     }, [token, authLoading]);
 
+    if (!can('learning', 'view')) {
+        return <div className="db-content"><AccessDenied /></div>;
+    }
+
+    const notStarted = enrollments.filter(e => e.progress_percent === 0).length;
+    const inProgress = enrollments.filter(e => e.progress_percent > 0 && e.progress_percent < 100).length;
+    const completed  = enrollments.filter(e => e.progress_percent === 100).length;
+
+    const STATUS_TABS = [
+        { key: 'all',         label: 'All',        icon: 'fa-th-large',    count: enrollments.length },
+        { key: 'not_started', label: 'Not Started', icon: 'fa-flag',        count: notStarted },
+        { key: 'in_progress', label: 'In Progress', icon: 'fa-play-circle', count: inProgress },
+        { key: 'completed',   label: 'Completed',   icon: 'fa-check-circle',count: completed  },
+    ];
+
     const filtered = useMemo(() => {
         const q = search.trim().toLowerCase();
         return enrollments.filter(item => {
@@ -50,205 +59,194 @@ export default function Learning() {
             const matchQ = !q || c.title?.toLowerCase().includes(q) || c.subtitle?.toLowerCase().includes(q);
             const pct = item.progress_percent;
             const matchStatus =
-                statusFilter === 'all' ? true :
+                statusFilter === 'all'         ? true :
                 statusFilter === 'not_started' ? pct === 0 :
-                statusFilter === 'in_progress' ? pct > 0 && pct < 100 :
+                statusFilter === 'in_progress' ? (pct > 0 && pct < 100) :
                 statusFilter === 'completed'   ? pct === 100 : true;
             return matchQ && matchStatus;
         });
     }, [enrollments, search, statusFilter]);
 
-    if (!can('learning', 'view')) {
-        return <div className="db-content"><AccessDenied /></div>;
-    }
-
-    const notStarted = enrollments.filter(c => c.progress_percent === 0).length;
-    const inProgress = enrollments.filter(c => c.progress_percent > 0 && c.progress_percent < 100).length;
-    const completed  = enrollments.filter(c => c.progress_percent === 100).length;
-
-    const STATUS_TABS = [
-        { key: 'all',         label: 'All',         icon: 'fa-th-large',     count: enrollments.length },
-        { key: 'not_started', label: 'Not Started',  icon: 'fa-flag',         count: notStarted },
-        { key: 'in_progress', label: 'In Progress',  icon: 'fa-play-circle',  count: inProgress },
-        { key: 'completed',   label: 'Completed',    icon: 'fa-check-circle', count: completed  },
-    ];
-
     return (
-        <div className="db-content" style={{ overflowY: 'auto', padding: '28px 28px 48px', flex: 1 }}>
+        <div className="db-content" style={{ padding: '28px 24px' }}>
 
-                    {/* ── Status filter tabs ── */}
-                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 18, scrollbarWidth: 'none' }}>
-                        {STATUS_TABS.map(({ key, label, icon, count }) => {
-                            const active = statusFilter === key;
-                            return (
-                                <button key={key} onClick={() => setStatusFilter(key)}
-                                    style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 50, border: `1.5px solid ${active ? '#081f4e' : '#e2e8f0'}`, background: active ? '#081f4e' : '#fff', color: active ? '#fff' : '#475569', fontFamily: 'Poppins,sans-serif', fontSize: '.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
-                                    <i className={`fas ${icon}`} style={{ fontSize: '.72rem' }}></i>
-                                    {label}
-                                    <span style={{ background: active ? 'rgba(255,255,255,.2)' : '#f1f5f9', color: active ? '#fff' : '#64748b', fontSize: '.68rem', fontWeight: 700, padding: '1px 7px', borderRadius: 20 }}>{count}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* ── Search + count ── */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                        <div style={{ flex: 1, position: 'relative' }}>
-                            <i className="fas fa-search" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '.88rem', pointerEvents: 'none' }}></i>
-                            <input
-                                type="text"
-                                placeholder="Search your courses…"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                style={{ width: '100%', padding: '13px 16px 13px 42px', borderRadius: 50, border: '1.5px solid #e8ecf4', fontFamily: 'Poppins,sans-serif', fontSize: '.88rem', outline: 'none', background: '#fff', boxShadow: '0 2px 8px rgba(8,31,78,.05)', boxSizing: 'border-box' }}
-                            />
-                        </div>
-                        {!loading && (
-                            <span style={{ flexShrink: 0, padding: '10px 20px', borderRadius: 50, background: '#f1f5f9', color: '#475569', fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 700, border: '1.5px solid #e8ecf4', whiteSpace: 'nowrap' }}>
-                                {filtered.length} course{filtered.length !== 1 ? 's' : ''}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* ── Error ── */}
-                    {apiError && (
-                        <div style={{ background: '#fff5f5', border: '1.5px solid #fca5a5', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                            <i className="fas fa-exclamation-circle" style={{ color: '#dc2626', marginTop: 2, flexShrink: 0 }}></i>
-                            <p style={{ margin: 0, color: '#7f1d1d', fontSize: '.85rem' }}>{apiError}</p>
-                        </div>
-                    )}
-
-                    {/* ── Loading ── */}
-                    {loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 0', gap: 14, flexDirection: 'column' }}>
-                            <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: '#fe730c' }}></i>
-                            <p style={{ color: '#94a3b8', fontFamily: 'Poppins,sans-serif', fontSize: '.88rem', margin: 0 }}>Loading your courses…</p>
-                        </div>
-
-                    ) : filtered.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '70px 20px', color: '#94a3b8', fontFamily: 'Poppins,sans-serif' }}>
-                            <i className="fas fa-book-open" style={{ fontSize: '2.5rem', marginBottom: 16, display: 'block' }}></i>
-                            <p style={{ fontSize: '.95rem', margin: '0 0 16px' }}>
-                                {enrollments.length === 0 ? 'No enrolled courses yet.' : 'No courses match your search.'}
-                            </p>
-                            {enrollments.length === 0 && (
-                                <Link to="/dashboard/learning/browse"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', borderRadius: 12, padding: '11px 26px', textDecoration: 'none', fontWeight: 700, fontSize: '.88rem' }}>
-                                    <i className="fas fa-search"></i> Browse Courses
-                                </Link>
-                            )}
-                        </div>
-
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 22 }}>
-                            {filtered.map(item => <CourseCard key={item.enrollment_id} item={item} />)}
-                        </div>
-                    )}
-        </div>
-    );
-}
-
-function CourseCard({ item }) {
-    const c   = item.course;
-    const pct = item.progress_percent;
-    const isComplete   = pct === 100;
-    const isNotStarted = pct === 0;
-
-    const lvlSt  = levelStyle(c.level);
-    const bdgSt  = c.badge ? badgeStyle(c.badge) : null;
-    const tags   = Array.isArray(c.tags) ? c.tags.slice(0, 4) : [];
-
-    const score       = item.avg_exam_score;
-    const scoreColor  = score === null ? '#9ca3af' : score >= 70 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
-    const scoreBg     = score === null ? '#f8fafc'  : score >= 70 ? '#f0fdf4'  : score >= 50 ? '#fffbeb'  : '#fef2f2';
-    const scoreBorder = score === null ? '#e2e8f0'  : score >= 70 ? '#bbf7d0'  : score >= 50 ? '#fde68a'  : '#fca5a5';
-
-    const btnBg   = isComplete ? 'linear-gradient(135deg,#059669,#10b981)' : isNotStarted ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : 'linear-gradient(135deg,#fe730c,#f97316)';
-    const btnIcon = isComplete ? 'fa-check-double' : isNotStarted ? 'fa-play' : 'fa-play-circle';
-    const btnText = isComplete ? 'Review Course'  : isNotStarted ? 'Start Learning' : 'Continue Learning';
-
-    return (
-        <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: '1.5px solid #e8ecf4', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 10px rgba(8,31,78,.06)', transition: 'transform .2s,box-shadow .2s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(8,31,78,.12)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 10px rgba(8,31,78,.06)'; }}>
-
-            {/* Hero image */}
-            <div style={{ height: 170, background: c.image_url ? `url(${c.image_url}) center/cover no-repeat` : 'linear-gradient(135deg,#081f4e,#1a1254)', position: 'relative', flexShrink: 0 }}>
-                {!c.image_url && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <i className={c.icon || c.icon_class || 'fas fa-book-open'} style={{ fontSize: '3rem', color: 'rgba(255,255,255,.18)' }}></i>
-                    </div>
-                )}
-                {/* Level chip */}
-                {c.level && (
-                    <span style={{ position: 'absolute', top: 12, left: 12, padding: '4px 11px', borderRadius: 20, background: lvlSt.bg, color: lvlSt.color, fontSize: '.67rem', fontWeight: 800, textTransform: 'capitalize' }}>
-                        {c.level}
-                    </span>
-                )}
-                {/* Badge chip */}
-                {bdgSt && (
-                    <span style={{ position: 'absolute', top: 12, right: 12, padding: '4px 11px', borderRadius: 20, background: bdgSt.bg, color: bdgSt.color, fontSize: '.67rem', fontWeight: 800, textTransform: 'capitalize' }}>
-                        {c.badge}
-                    </span>
-                )}
-                {/* Progress bar overlay */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 14px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,.25)', borderRadius: 50, overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: isComplete ? '#4ade80' : '#fe730c', borderRadius: 50, transition: 'width .5s' }}></div>
-                    </div>
-                    <span style={{ fontSize: '.7rem', fontWeight: 800, color: isComplete ? '#4ade80' : '#fdba74', whiteSpace: 'nowrap' }}>{pct}%</span>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
+                <div>
+                    <h1 style={{ fontFamily:'Poppins,sans-serif', color:'#081f4e', fontSize:'1.5rem', fontWeight:700, margin:0 }}>
+                        <i className="fas fa-book-reader" style={{ color:'#fe730c', marginRight:10 }}></i>
+                        My Learning
+                    </h1>
+                    <p style={{ color:'#666', margin:'4px 0 0', fontSize:'.9rem' }}>Track your enrolled courses, progress and assessment scores</p>
                 </div>
             </div>
 
-            {/* Card body */}
-            <div style={{ padding: '16px 18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Icon + Title */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#fe730c,#f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <i className={c.icon || c.icon_class || 'fas fa-book'} style={{ color: '#fff', fontSize: '.95rem' }}></i>
+            {/* Summary Cards */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:28 }}>
+                {[
+                    { label:'Total Courses',  value: enrollments.length, icon:'fa-graduation-cap', color:'#8b5cf6' },
+                    { label:'Not Started',    value: notStarted,          icon:'fa-flag',           color:'#64748b' },
+                    { label:'In Progress',    value: inProgress,          icon:'fa-play-circle',    color:'#3b82f6' },
+                    { label:'Completed',      value: completed,           icon:'fa-check-circle',   color:'#10b981' },
+                ].map(card => (
+                    <div key={card.label} style={{ background:'#fff', borderRadius:12, padding:'18px 20px', boxShadow:'0 1px 6px rgba(0,0,0,.08)', borderLeft:`4px solid ${card.color}` }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                            <i className={`fas ${card.icon}`} style={{ color:card.color, fontSize:'1.1rem' }}></i>
+                            <span style={{ color:'#666', fontSize:'.82rem', fontWeight:600 }}>{card.label}</span>
+                        </div>
+                        <div style={{ fontSize:'1.3rem', fontWeight:700, color:'#081f4e' }}>{card.value}</div>
                     </div>
-                    <h3 style={{ margin: 0, fontSize: '.92rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif', lineHeight: 1.3 }}>{c.title}</h3>
-                </div>
-
-                {/* Subtitle */}
-                {(c.subtitle || c.description) && (
-                    <p style={{ margin: '0 0 10px', fontSize: '.78rem', color: '#64748b', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {c.subtitle || c.description}
-                    </p>
-                )}
-
-                {/* Exam score */}
-                {item.exam_count > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, background: scoreBg, borderRadius: 8, padding: '6px 10px', border: `1px solid ${scoreBorder}` }}>
-                        <i className="fas fa-clipboard-check" style={{ color: scoreColor, fontSize: '.72rem', flexShrink: 0 }}></i>
-                        <span style={{ fontSize: '.72rem', color: '#64748b', flex: 1 }}>{item.exam_count} assessment{item.exam_count !== 1 ? 's' : ''}</span>
-                        <span style={{ fontWeight: 800, fontSize: '.82rem', color: scoreColor }}>{score !== null ? `${score}%` : 'Not attempted'}</span>
-                    </div>
-                )}
-
-                {/* Tags */}
-                {tags.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 'auto', paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
-                        {tags.map((t, i) => (
-                            <span key={i} style={{ fontSize: '.67rem', color: '#64748b', background: '#f1f5f9', padding: '3px 9px', borderRadius: 20, fontFamily: 'Poppins,sans-serif' }}>{t}</span>
-                        ))}
-                    </div>
-                )}
+                ))}
             </div>
 
-            {/* Lessons meta + CTA */}
-            <div style={{ padding: '8px 18px 16px', borderTop: '1px solid #f8fafc' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: '.72rem', color: '#94a3b8' }}>
-                    <span><i className="fas fa-layer-group" style={{ marginRight: 4 }}></i>{item.total_lessons} lesson{item.total_lessons !== 1 ? 's' : ''}</span>
-                    {item.completed_lessons > 0 && (
-                        <span style={{ color: '#16a34a' }}><i className="fas fa-check" style={{ marginRight: 4 }}></i>{item.completed_lessons} done</span>
-                    )}
-                    {c.duration && <span><i className="fas fa-clock" style={{ marginRight: 4 }}></i>{c.duration}</span>}
+            {/* Filter tabs + Search */}
+            <div style={{ display:'flex', gap:10, marginBottom:18, flexWrap:'wrap', alignItems:'center' }}>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                    {STATUS_TABS.map(({ key, label, icon, count }) => {
+                        const active = statusFilter === key;
+                        return (
+                            <button key={key} onClick={() => setStatusFilter(key)}
+                                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:50, border:`1.5px solid ${active ? '#081f4e' : '#e2e8f0'}`, background: active ? '#081f4e' : '#fff', color: active ? '#fff' : '#475569', fontSize:'.8rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s' }}>
+                                <i className={`fas ${icon}`} style={{ fontSize:'.72rem' }}></i>
+                                {label}
+                                <span style={{ background: active ? 'rgba(255,255,255,.2)' : '#f1f5f9', color: active ? '#fff' : '#64748b', fontSize:'.68rem', fontWeight:700, padding:'1px 7px', borderRadius:20 }}>{count}</span>
+                            </button>
+                        );
+                    })}
                 </div>
-                <Link to={`/dashboard/learning/${c.slug}`}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px', borderRadius: 10, background: btnBg, color: '#fff', textDecoration: 'none', fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 700, boxSizing: 'border-box' }}>
-                    <i className={`fas ${btnIcon}`}></i> {btnText}
-                </Link>
+                <div style={{ flex:1, minWidth:200, position:'relative' }}>
+                    <i className="fas fa-search" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:'.85rem', pointerEvents:'none' }}></i>
+                    <input
+                        type="text"
+                        placeholder="Search your courses…"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        style={{ width:'100%', padding:'9px 14px 9px 36px', border:'1px solid #ddd', borderRadius:8, fontSize:'.9rem', boxSizing:'border-box' }}
+                    />
+                </div>
+            </div>
+
+            {/* Error */}
+            {apiError && (
+                <div style={{ background:'#fff5f5', border:'1.5px solid #fca5a5', borderRadius:12, padding:'14px 18px', marginBottom:20, color:'#7f1d1d', fontSize:'.85rem' }}>
+                    <i className="fas fa-exclamation-circle" style={{ marginRight:8 }}></i>{apiError}
+                </div>
+            )}
+
+            {/* Table */}
+            <div style={{ background:'#fff', borderRadius:12, boxShadow:'0 1px 6px rgba(0,0,0,.08)', overflow:'hidden' }}>
+                <div style={{ overflowX:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'.88rem' }}>
+                        <thead>
+                            <tr style={{ background:'#081f4e', color:'#fff' }}>
+                                <th style={{ padding:'12px 14px', textAlign:'left', fontWeight:600 }}>Course</th>
+                                <th style={{ padding:'12px 14px', textAlign:'left', fontWeight:600, minWidth:140 }}>Progress</th>
+                                <th style={{ padding:'12px 14px', textAlign:'left', fontWeight:600 }}>Assessments</th>
+                                <th style={{ padding:'12px 14px', textAlign:'left', fontWeight:600 }}>Lessons</th>
+                                <th style={{ padding:'12px 14px', textAlign:'left', fontWeight:600 }}>Status</th>
+                                <th style={{ padding:'12px 14px', textAlign:'center', fontWeight:600 }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={6} style={{ textAlign:'center', padding:40, color:'#999' }}>
+                                    <i className="fas fa-spinner fa-spin" style={{ marginRight:8 }}></i>Loading your courses…
+                                </td></tr>
+                            ) : filtered.length === 0 ? (
+                                <tr><td colSpan={6} style={{ textAlign:'center', padding:48, color:'#999' }}>
+                                    <i className="fas fa-book-open" style={{ fontSize:'2rem', display:'block', marginBottom:10 }}></i>
+                                    {enrollments.length === 0 ? 'No enrolled courses yet.' : 'No courses match your search.'}
+                                    {enrollments.length === 0 && (
+                                        <div style={{ marginTop:14 }}>
+                                            <Link to="/dashboard/learning/browse"
+                                                style={{ display:'inline-flex', alignItems:'center', gap:8, background:'linear-gradient(135deg,#fe730c,#f97316)', color:'#fff', borderRadius:8, padding:'9px 22px', textDecoration:'none', fontWeight:700, fontSize:'.85rem' }}>
+                                                <i className="fas fa-search"></i> Browse Courses
+                                            </Link>
+                                        </div>
+                                    )}
+                                </td></tr>
+                            ) : filtered.map((item, i) => {
+                                const c   = item.course;
+                                const pct = item.progress_percent;
+                                const st  = PROGRESS_STATUS(pct);
+                                const score      = item.avg_exam_score;
+                                const scoreColor = score === null ? '#9ca3af' : score >= 70 ? '#16a34a' : score >= 50 ? '#d97706' : '#dc2626';
+
+                                const btnBg   = pct === 100 ? '#10b981' : pct === 0 ? '#6366f1' : '#fe730c';
+                                const btnIcon = pct === 100 ? 'fa-check-double' : pct === 0 ? 'fa-play' : 'fa-play-circle';
+                                const btnText = pct === 100 ? 'Review' : pct === 0 ? 'Start' : 'Continue';
+
+                                return (
+                                    <tr key={item.enrollment_id} style={{ background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+
+                                        {/* Course */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0' }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                                <div style={{ width:38, height:38, borderRadius:10, background: c.image_url ? `url(${c.image_url}) center/cover no-repeat` : 'linear-gradient(135deg,#fe730c,#f97316)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                                                    {!c.image_url && <i className={c.icon || c.icon_class || 'fas fa-book'} style={{ color:'#fff', fontSize:'.85rem' }}></i>}
+                                                </div>
+                                                <div style={{ minWidth:0 }}>
+                                                    <div style={{ fontWeight:700, color:'#081f4e', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:220 }}>{c.title}</div>
+                                                    {c.level && <div style={{ fontSize:'.72rem', color:'#888', marginTop:1, textTransform:'capitalize' }}>{c.level}</div>}
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {/* Progress */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0' }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                                <div style={{ flex:1, height:6, background:'#e5e7eb', borderRadius:50, overflow:'hidden', minWidth:80 }}>
+                                                    <div style={{ width:`${pct}%`, height:'100%', background: pct === 100 ? '#10b981' : '#fe730c', borderRadius:50, transition:'width .4s' }}></div>
+                                                </div>
+                                                <span style={{ fontSize:'.78rem', fontWeight:700, color: pct === 100 ? '#10b981' : '#fe730c', whiteSpace:'nowrap' }}>{pct}%</span>
+                                            </div>
+                                        </td>
+
+                                        {/* Assessments */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0' }}>
+                                            {item.exam_count > 0 ? (
+                                                <div>
+                                                    <div style={{ fontWeight:700, color:scoreColor, fontSize:'.88rem' }}>
+                                                        {score !== null ? `${score}%` : 'Not attempted'}
+                                                    </div>
+                                                    <div style={{ fontSize:'.72rem', color:'#888' }}>{item.exam_count} assessment{item.exam_count !== 1 ? 's' : ''}</div>
+                                                </div>
+                                            ) : (
+                                                <span style={{ color:'#bbb', fontSize:'.82rem' }}>—</span>
+                                            )}
+                                        </td>
+
+                                        {/* Lessons */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0' }}>
+                                            <div style={{ fontWeight:600, color:'#081f4e', fontSize:'.88rem' }}>
+                                                {item.completed_lessons}/{item.total_lessons}
+                                            </div>
+                                            <div style={{ fontSize:'.72rem', color:'#888' }}>
+                                                {item.total_lessons} lesson{item.total_lessons !== 1 ? 's' : ''}
+                                                {c.duration && ` · ${c.duration}`}
+                                            </div>
+                                        </td>
+
+                                        {/* Status */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0' }}>
+                                            <span style={{ background:st.bg, color:st.color, padding:'3px 10px', borderRadius:20, fontSize:'.75rem', fontWeight:700, whiteSpace:'nowrap' }}>
+                                                {st.label}
+                                            </span>
+                                        </td>
+
+                                        {/* Action */}
+                                        <td style={{ padding:'12px 14px', borderBottom:'1px solid #f0f0f0', textAlign:'center' }}>
+                                            <Link to={`/dashboard/learning/${c.slug}`}
+                                                style={{ display:'inline-flex', alignItems:'center', gap:6, background:btnBg, color:'#fff', border:'none', borderRadius:6, padding:'6px 14px', textDecoration:'none', fontSize:'.78rem', fontWeight:700, whiteSpace:'nowrap' }}>
+                                                <i className={`fas ${btnIcon}`}></i> {btnText}
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
