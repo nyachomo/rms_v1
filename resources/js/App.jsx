@@ -82,6 +82,7 @@ import MyTechsphereClasses from './pages/MyTechsphereClasses';
 import AdminAdmissionLetters from './pages/AdminAdmissionLetters';
 import StudentAdmissionLetter from './pages/StudentAdmissionLetter';
 import AdminFeeManagement from './pages/AdminFeeManagement';
+import StudentMyFees from './pages/StudentMyFees';
 
 import '../css/app.css';
 
@@ -174,6 +175,7 @@ function App() {
                             <Route path="code-practice"          element={<CodePractice />} />
                             <Route path="code-practice/python"   element={<CodePractice initialMode="python" />} />
                             <Route path="code-practice/r"        element={<CodePractice initialMode="r" />} />
+                            <Route path="my-fees"            element={<StudentMyFees />} />
                             <Route path="admission-letter"   element={<StudentAdmissionLetter />} />
                             <Route path="profile"            element={<LearnerProfile />} />
                             <Route path=":courseSlug"        element={<CourseLearner />} />

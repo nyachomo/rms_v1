@@ -45,6 +45,10 @@ class FeePaymentController extends Controller
             ->with(['course:id,title', 'intake:id,intake_name'])
             ->withSum('feePayments', 'amount_paid');
 
+        if ($this->isStudent()) {
+            $query->where('user_id', Auth::id());
+        }
+
         if ($request->filled('search')) {
             $q = $request->search;
             $query->where(function ($w) use ($q) {

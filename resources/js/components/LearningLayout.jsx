@@ -12,6 +12,7 @@ const PATH_TITLES = {
     '/dashboard/learning/profile':       'Learning Profile',
     '/dashboard/learning/code-practice': 'Code Practice',
     '/dashboard/learning/admission-letter': 'Admission Letter',
+    '/dashboard/learning/my-fees':          'My Fees',
 };
 
 export default function LearningLayout() {
