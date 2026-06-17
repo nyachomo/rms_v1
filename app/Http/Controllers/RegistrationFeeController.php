@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\CompanySetting;
 use App\Models\AdmissionLetterConfig;
+use App\Models\Enrollment;
 use App\Models\RegistrationFee;
 use App\Models\Role;
+use App\Models\TechsphereClass;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -134,7 +136,15 @@ class RegistrationFeeController extends Controller
             ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath))
             : null;
 
-        $html = $this->buildReceiptHtml($registrationFee, $config, $institutionName, $address, $website, $email, $phone, $logoData);
+        $userId = $registrationFee->user->id;
+
+        $enrollments = Enrollment::where('user_id', $userId)
+            ->with('course:id,title')
+            ->get();
+
+        $techsphereClass = TechsphereClass::whereHas('enrolledUsers', fn($q) => $q->where('users.id', $userId))->first();
+
+        $html = $this->buildReceiptHtml($registrationFee, $config, $institutionName, $address, $website, $email, $phone, $logoData, $enrollments, $techsphereClass);
 
         $pdf      = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
         $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $registrationFee->user->name ?? 'student');
@@ -151,7 +161,9 @@ class RegistrationFeeController extends Controller
         string $website,
         string $email,
         string $phone,
-        ?string $logoData
+        ?string $logoData,
+        \Illuminate\Database\Eloquent\Collection $enrollments,
+        ?TechsphereClass $techsphereClass = null
     ): string {
         $logoHtml = $logoData
             ? "<img src=\"{$logoData}\" style=\"width:140px;height:140px;border-radius:50%;object-fit:cover;\" />"
@@ -163,6 +175,11 @@ class RegistrationFeeController extends Controller
         $studentName  = htmlspecialchars($fee->user->name ?? '—');
         $studentEmail = htmlspecialchars($fee->user->email ?? '—');
         $balanceAt    = Carbon::parse($fee->created_at ?? now())->format('Y-m-d H:i:s');
+
+        $courseList = $enrollments->isNotEmpty()
+            ? implode(', ', $enrollments->map(fn($e) => htmlspecialchars($e->course?->title ?? '—'))->toArray())
+            : '—';
+        $className = htmlspecialchars($techsphereClass?->name ?? 'N/A');
 
         $mpesaBizName = htmlspecialchars($config->mpesa_business_name ?? 'Techsphere Institute');
         $mpesaPaybill = htmlspecialchars($config->mpesa_paybill       ?? '522533');
@@ -232,6 +249,8 @@ class RegistrationFeeController extends Controller
         <div class="info-block">
             <strong>Student Name:</strong> {$studentName}<br/>
             <strong>Email:</strong> {$studentEmail}<br/>
+            <strong>Course(s):</strong> {$courseList}<br/>
+            <strong>Class:</strong> {$className}<br/>
             <strong>Fee Type:</strong> Registration Fee
         </div>
     </td>
