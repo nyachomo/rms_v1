@@ -42,6 +42,8 @@ class RolePermissionController extends Controller
         'admission_letter'  => 'Admission Letter',
         // Techsphere Classes
         'techsphere_classes' => 'Techsphere Classes',
+        // Fee Management
+        'fee_management'    => 'Fee Management',
     ];
 
     /** Per-module allowed actions — mirrors what the UI actually supports */
@@ -77,6 +79,8 @@ class RolePermissionController extends Controller
         'admission_letter'  => ['view', 'download'],
         // Techsphere Classes
         'techsphere_classes' => ['view', 'create', 'update', 'delete', 'join'],
+        // Fee Management
+        'fee_management'    => ['view', 'create', 'update', 'delete', 'download'],
     ];
 
     /**

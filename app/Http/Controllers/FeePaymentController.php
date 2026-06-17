@@ -11,11 +11,36 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class FeePaymentController extends Controller
 {
+    private function hasFeePermission(string $action): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+        if ($user->role_id === null) return true; // super-admin
+        $user->loadMissing('role.permissions');
+        return $user->role && $user->role->permissions
+            ->where('module', 'fee_management')
+            ->where('action', $action)
+            ->isNotEmpty();
+    }
+
+    private function isStudent(): bool
+    {
+        $user = Auth::user();
+        if (!$user || $user->role_id === null) return false;
+        $user->loadMissing('role');
+        return $user->role && stripos($user->role->name, 'student') !== false;
+    }
+
     public function index(Request $request): JsonResponse
     {
+        if (!$this->hasFeePermission('view')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         $query = Enrollment::query()
             ->with(['course:id,title', 'intake:id,intake_name'])
             ->withSum('feePayments', 'amount_paid');
@@ -48,6 +73,10 @@ class FeePaymentController extends Controller
 
     public function updateCourseFee(Request $request, Enrollment $enrollment): JsonResponse
     {
+        if (!$this->hasFeePermission('update')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         $data = $request->validate([
             'course_fee' => 'required|numeric|min:0',
         ]);
@@ -68,6 +97,15 @@ class FeePaymentController extends Controller
 
     public function payments(Enrollment $enrollment): JsonResponse
     {
+        $isStudent = $this->isStudent();
+        if ($isStudent) {
+            if ($enrollment->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        } elseif (!$this->hasFeePermission('view')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         $payments = $enrollment->feePayments()->orderBy('date_paid')->get();
         $credit   = (float) $payments->sum('amount_paid');
         $debit    = (float) ($enrollment->course_fee ?? 0);
@@ -83,6 +121,10 @@ class FeePaymentController extends Controller
 
     public function store(Request $request, Enrollment $enrollment): JsonResponse
     {
+        if (!$this->hasFeePermission('create')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         $data = $request->validate([
             'amount_paid'      => 'required|numeric|min:0.01',
             'date_paid'        => 'required|date',
@@ -105,6 +147,10 @@ class FeePaymentController extends Controller
 
     public function destroy(Enrollment $enrollment, FeePayment $payment): JsonResponse
     {
+        if (!$this->hasFeePermission('delete')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         if ($payment->enrollment_id !== $enrollment->id) {
             return response()->json(['message' => 'Not found.'], 404);
         }
@@ -123,6 +169,15 @@ class FeePaymentController extends Controller
 
     public function downloadReceipt(Enrollment $enrollment, FeePayment $payment)
     {
+        $isStudent = $this->isStudent();
+        if ($isStudent) {
+            if ($enrollment->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        } elseif (!$this->hasFeePermission('download')) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
         if ($payment->enrollment_id !== $enrollment->id) {
             return response()->json(['message' => 'Not found.'], 404);
         }
