@@ -41,7 +41,12 @@ function balanceColor(balance) {
 }
 
 export default function AdminFeeManagement() {
-    const { token } = useAuth();
+    const { token, can } = useAuth();
+    const canUpdate   = can('fee_management', 'update');
+    const canCreate   = can('fee_management', 'create');
+    const canDelete   = can('fee_management', 'delete');
+    const canDownload = can('fee_management', 'download');
+
     const h = useCallback(() => ({
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
@@ -365,14 +370,18 @@ export default function AdminFeeManagement() {
                                                         </td>
                                                         <td style={{ padding:'11px 14px', borderBottom:'1px solid #f0f0f0', textAlign:'center' }} onClick={ev => ev.stopPropagation()}>
                                                             <div style={{ display:'flex', gap:6, justifyContent:'center' }}>
-                                                                <button title="Set Course Fee" onClick={() => openFeeModal(e)}
-                                                                    style={{ background:'#3b82f6', color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'.78rem' }}>
-                                                                    <i className="fas fa-edit"></i>
-                                                                </button>
-                                                                <button title="Add Payment" onClick={() => openPayModal(e)}
-                                                                    style={{ background:'#10b981', color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'.78rem' }}>
-                                                                    <i className="fas fa-plus"></i>
-                                                                </button>
+                                                                {canUpdate && (
+                                                                    <button title="Set Course Fee" onClick={() => openFeeModal(e)}
+                                                                        style={{ background:'#3b82f6', color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'.78rem' }}>
+                                                                        <i className="fas fa-edit"></i>
+                                                                    </button>
+                                                                )}
+                                                                {canCreate && (
+                                                                    <button title="Add Payment" onClick={() => openPayModal(e)}
+                                                                        style={{ background:'#10b981', color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'.78rem' }}>
+                                                                        <i className="fas fa-plus"></i>
+                                                                    </button>
+                                                                )}
                                                                 <button title="View Payments" onClick={() => loadPayments(e)}
                                                                     style={{ background:'#8b5cf6', color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'.78rem' }}>
                                                                     <i className="fas fa-list"></i>
@@ -427,17 +436,23 @@ export default function AdminFeeManagement() {
                                         ))}
                                     </div>
 
-                                    {/* Add Payment Button */}
-                                    <div style={{ padding:'12px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', gap:8 }}>
-                                        <button onClick={() => openFeeModal(selected)}
-                                            style={{ flex:1, padding:'8px', background:'#eff6ff', color:'#3b82f6', border:'1px solid #bfdbfe', borderRadius:7, fontWeight:600, cursor:'pointer', fontSize:'.82rem' }}>
-                                            <i className="fas fa-edit" style={{ marginRight:5 }}></i>Set Fee
-                                        </button>
-                                        <button onClick={() => openPayModal(selected)}
-                                            style={{ flex:1, padding:'8px', background:'#d1fae5', color:'#065f46', border:'1px solid #6ee7b7', borderRadius:7, fontWeight:600, cursor:'pointer', fontSize:'.82rem' }}>
-                                            <i className="fas fa-plus" style={{ marginRight:5 }}></i>Add Payment
-                                        </button>
-                                    </div>
+                                    {/* Panel action buttons */}
+                                    {(canUpdate || canCreate) && (
+                                        <div style={{ padding:'12px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', gap:8 }}>
+                                            {canUpdate && (
+                                                <button onClick={() => openFeeModal(selected)}
+                                                    style={{ flex:1, padding:'8px', background:'#eff6ff', color:'#3b82f6', border:'1px solid #bfdbfe', borderRadius:7, fontWeight:600, cursor:'pointer', fontSize:'.82rem' }}>
+                                                    <i className="fas fa-edit" style={{ marginRight:5 }}></i>Set Fee
+                                                </button>
+                                            )}
+                                            {canCreate && (
+                                                <button onClick={() => openPayModal(selected)}
+                                                    style={{ flex:1, padding:'8px', background:'#d1fae5', color:'#065f46', border:'1px solid #6ee7b7', borderRadius:7, fontWeight:600, cursor:'pointer', fontSize:'.82rem' }}>
+                                                    <i className="fas fa-plus" style={{ marginRight:5 }}></i>Add Payment
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Payments List */}
                                     <div style={{ maxHeight:420, overflowY:'auto' }}>
@@ -462,14 +477,18 @@ export default function AdminFeeManagement() {
                                                     </div>
                                                 </div>
                                                 <div style={{ display:'flex', gap:5, flexShrink:0 }}>
-                                                    <button title="Download Receipt" onClick={() => handleDownloadReceipt(p)}
-                                                        style={{ background:'#fef3c7', color:'#92400e', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer', fontSize:'.75rem' }}>
-                                                        <i className="fas fa-download"></i>
-                                                    </button>
-                                                    <button title="Delete" onClick={() => handleDeletePayment(p)}
-                                                        style={{ background:'#fee2e2', color:'#991b1b', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer', fontSize:'.75rem' }}>
-                                                        <i className="fas fa-trash"></i>
-                                                    </button>
+                                                    {canDownload && (
+                                                        <button title="Download Receipt" onClick={() => handleDownloadReceipt(p)}
+                                                            style={{ background:'#fef3c7', color:'#92400e', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer', fontSize:'.75rem' }}>
+                                                            <i className="fas fa-download"></i>
+                                                        </button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button title="Delete" onClick={() => handleDeletePayment(p)}
+                                                            style={{ background:'#fee2e2', color:'#991b1b', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer', fontSize:'.75rem' }}>
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

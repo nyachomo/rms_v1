@@ -49,7 +49,7 @@ const GROUPS = [
             { label: 'Intakes',           to: '/dashboard/intakes',           icon: 'fas fa-calendar-check',     perm: ['intakes',             'view'] },
             { label: 'Enrollments',       to: '/dashboard/enrollments',       icon: 'fas fa-file-alt',           perm: ['enrollments',         'view'] },
             { label: 'Admission Letters', to: '/dashboard/admission-letters', icon: 'fas fa-envelope-open-text', perm: ['enrollments',         'view'] },
-            { label: 'Fee Management',    to: '/dashboard/fee-management',    icon: 'fas fa-money-bill-wave',    perm: ['fee_management',      'view'] },
+            { label: 'Fee Management',    to: '/dashboard/fee-management',    icon: 'fas fa-money-bill-wave',    perm: ['enrollments',         'view'] },
             { label: 'Student Scores',    to: '/dashboard/student-scores',    icon: 'fas fa-graduation-cap',     perm: ['student_scores',      'view'] },
             { label: 'Manual Gradebook',  to: '/dashboard/manual-gradebook',  icon: 'fas fa-table',              perm: ['student_scores',      'view'] },
         ],
