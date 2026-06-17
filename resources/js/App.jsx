@@ -84,6 +84,7 @@ import StudentAdmissionLetter from './pages/StudentAdmissionLetter';
 import AdminFeeManagement from './pages/AdminFeeManagement';
 import AdminRegistrationFees from './pages/AdminRegistrationFees';
 import StudentMyFees from './pages/StudentMyFees';
+import StudentRegistrationFee from './pages/StudentRegistrationFee';
 
 import '../css/app.css';
 
@@ -178,6 +179,7 @@ function App() {
                             <Route path="code-practice/python"   element={<CodePractice initialMode="python" />} />
                             <Route path="code-practice/r"        element={<CodePractice initialMode="r" />} />
                             <Route path="my-fees"            element={<StudentMyFees />} />
+                            <Route path="registration-fee"   element={<StudentRegistrationFee />} />
                             <Route path="admission-letter"   element={<StudentAdmissionLetter />} />
                             <Route path="profile"            element={<LearnerProfile />} />
                             <Route path=":courseSlug"        element={<CourseLearner />} />

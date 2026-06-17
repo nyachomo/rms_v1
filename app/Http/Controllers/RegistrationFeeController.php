@@ -29,10 +29,29 @@ class RegistrationFeeController extends Controller
             ->isNotEmpty();
     }
 
+    private function isStudent(): bool
+    {
+        $user = Auth::user();
+        if (!$user || $user->role_id === null) return false;
+        $user->loadMissing('role');
+        return $user->role && stripos($user->role->name, 'student') !== false;
+    }
+
     public function index(Request $request): JsonResponse
     {
         if (!$this->hasPermission('view')) {
             return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        // Students only see their own record
+        if ($this->isStudent()) {
+            $user = Auth::user();
+            $user->loadMissing('registrationFee');
+            return response()->json([
+                'data'       => [$user->only(['id', 'name', 'email', 'status']) + ['registration_fee' => $user->registrationFee]],
+                'total'      => 1,
+                'last_page'  => 1,
+            ]);
         }
 
         $studentRoleIds = Role::whereRaw('LOWER(name) LIKE ?', ['%student%'])->pluck('id');
@@ -117,7 +136,11 @@ class RegistrationFeeController extends Controller
 
     public function downloadReceipt(RegistrationFee $registrationFee)
     {
-        if (!$this->hasPermission('download')) {
+        if ($this->isStudent()) {
+            if ($registrationFee->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        } elseif (!$this->hasPermission('download')) {
             return response()->json(['message' => 'Access denied.'], 403);
         }
 
