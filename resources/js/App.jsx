@@ -82,6 +82,7 @@ import MyTechsphereClasses from './pages/MyTechsphereClasses';
 import AdminAdmissionLetters from './pages/AdminAdmissionLetters';
 import StudentAdmissionLetter from './pages/StudentAdmissionLetter';
 import AdminFeeManagement from './pages/AdminFeeManagement';
+import AdminRegistrationFees from './pages/AdminRegistrationFees';
 import StudentMyFees from './pages/StudentMyFees';
 
 import '../css/app.css';
@@ -158,7 +159,8 @@ function App() {
                         <Route path="techsphere-classes"    element={<TechsphereClasses />} />
                         <Route path="my-techsphere-classes" element={<MyTechsphereClasses />} />
                         <Route path="admission-letters"  element={<AdminAdmissionLetters />} />
-                        <Route path="fee-management"     element={<AdminFeeManagement />} />
+                        <Route path="fee-management"       element={<AdminFeeManagement />} />
+                        <Route path="registration-fees"  element={<AdminRegistrationFees />} />
                         <Route path="profile"        element={<Profile />} />
                         <Route path="schools"        element={<Schools />} />
                         <Route path="school-categories" element={<SchoolCategories />} />

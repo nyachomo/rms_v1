@@ -32,6 +32,7 @@ use App\Http\Controllers\ManualGradebookController;
 use App\Http\Controllers\TechsphereClassController;
 use App\Http\Controllers\AdmissionLetterController;
 use App\Http\Controllers\FeePaymentController;
+use App\Http\Controllers\RegistrationFeeController;
 
 // Public routes
 Route::post('/contact',           [ContactController::class, 'send']);
@@ -296,6 +297,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/fee-management/enrollments/{enrollment}/payments',                 [FeePaymentController::class, 'store']);
     Route::delete('/fee-management/enrollments/{enrollment}/payments/{payment}',     [FeePaymentController::class, 'destroy']);
     Route::get('/fee-management/enrollments/{enrollment}/payments/{payment}/receipt',[FeePaymentController::class, 'downloadReceipt']);
+
+    // Registration Fees
+    Route::get('/registration-fees',                                    [RegistrationFeeController::class, 'index']);
+    Route::post('/registration-fees',                                   [RegistrationFeeController::class, 'store']);
+    Route::put('/registration-fees/{registrationFee}',                  [RegistrationFeeController::class, 'update']);
+    Route::delete('/registration-fees/{registrationFee}',               [RegistrationFeeController::class, 'destroy']);
+    Route::get('/registration-fees/{registrationFee}/receipt',          [RegistrationFeeController::class, 'downloadReceipt']);
 
     // Company settings
     Route::get('/settings',             [SettingController::class, 'show']);
