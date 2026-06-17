@@ -158,7 +158,7 @@ class FeePaymentController extends Controller
         $html = $this->buildReceiptHtml(
             $enrollment, $payment, $allPayments,
             $config, $institutionName, $address, $website, $email, $phone,
-            $logoData, $credit, $debit, $balance, $techsphereClass
+            $logoData, $balance, $techsphereClass
         );
 
         $pdf      = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
@@ -171,7 +171,7 @@ class FeePaymentController extends Controller
     private function buildReceiptHtml(
         Enrollment $enrollment,
         FeePayment $payment,
-        $allPayments,
+        \Illuminate\Database\Eloquent\Collection $allPayments,
         AdmissionLetterConfig $config,
         string $institutionName,
         string $address,
@@ -179,14 +179,12 @@ class FeePaymentController extends Controller
         string $email,
         string $phone,
         ?string $logoData,
-        float $credit,
-        float $debit,
         float $balance,
         ?TechsphereClass $techsphereClass = null
     ): string {
         $logoHtml = $logoData
-            ? "<img src=\"{$logoData}\" style=\"width:90px;height:90px;border-radius:50%;object-fit:cover;\" />"
-            : "<div style=\"width:90px;height:90px;border-radius:50%;background:#081f4e;text-align:center;line-height:90px;\"><span style=\"color:#fff;font-size:36px;font-weight:800;\">T</span></div>";
+            ? "<img src=\"{$logoData}\" style=\"width:140px;height:140px;border-radius:50%;object-fit:cover;\" />"
+            : "<div style=\"width:140px;height:140px;border-radius:50%;background:#081f4e;text-align:center;line-height:140px;\"><span style=\"color:#fff;font-size:56px;font-weight:800;\">T</span></div>";
 
         $receiptNo       = htmlspecialchars($payment->payment_ref_no ?? "#{$payment->id}");
         $datePaid        = Carbon::parse($payment->date_paid)->format('Y-m-d');
@@ -242,7 +240,7 @@ HTML;
     .info-block { font-size:12px; line-height:1.7; }
     .inst-name { font-size:14px; font-weight:800; color:#e53e3e; letter-spacing:0.5px; }
     .receipt-no { font-size:14px; font-weight:700; color:#e53e3e; }
-    .stamp-box { border:3px solid #081f4e; display:inline-block; padding:10px 18px; text-align:center; }
+    .stamp-box { border:3px solid #3385ff; display:inline-block; padding:10px 18px; text-align:center; }
     th { background:#081f4e; color:#fff; padding:9px 8px; border:1px solid #081f4e; text-align:left; font-size:11px; }
     .balance-row { font-size:14px; font-weight:700; margin:14px 0; text-align:right; }
     .note-box { margin-top:16px; }
@@ -260,9 +258,9 @@ HTML;
         <div class="paid-banner">PAID (Course Fee)</div>
         <div style="margin-top:8px;">
             <div class="stamp-box">
-                <div style="font-size:13px;font-weight:700;color:#081f4e;">{$institutionName}</div>
+                <div style="font-size:13px;font-weight:700;color:#3385ff;">{$institutionName}</div>
                 <div style="font-size:12px;font-weight:700;color:#fe730c;margin-top:4px;">P A I D</div>
-                <div style="font-size:11px;color:#081f4e;margin-top:4px;">P.O. Box 1334-00618, NAIROBI</div>
+                <div style="font-size:11px;color:#3385ff;margin-top:4px;">P.O. Box 1334-00618, NAIROBI</div>
             </div>
         </div>
     </td>

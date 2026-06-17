@@ -457,7 +457,7 @@ export default function AdminFeeManagement() {
                                                 <div style={{ flex:1, minWidth:0 }}>
                                                     <div style={{ fontWeight:700, color:'#081f4e', fontSize:'.9rem' }}>Ksh {parseFloat(p.amount_paid).toLocaleString()}</div>
                                                     <div style={{ fontSize:'.75rem', color:'#888', marginTop:1 }}>
-                                                        {p.date_paid} &bull; {p.payment_method}
+                                                        {p.date_paid?.slice(0, 10)} &bull; {p.payment_method}
                                                         {p.payment_ref_no && <span style={{ marginLeft:5, color:'#3b82f6' }}>{p.payment_ref_no}</span>}
                                                     </div>
                                                 </div>
