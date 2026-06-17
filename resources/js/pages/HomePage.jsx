@@ -348,7 +348,7 @@ export default function HomePage() {
 
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Home Page</h1>
+                            <h1 className="db-page-title"><i className="fas fa-home"></i> Home Page</h1>
                             <p className="db-page-sub">Manage all content displayed on the public home page</p>
                         </div>
                         <a href="/" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', fontWeight: 600, textDecoration: 'none' }}>

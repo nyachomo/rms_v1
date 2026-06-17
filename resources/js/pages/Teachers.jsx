@@ -445,7 +445,7 @@ export default function Teachers() {
 
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Teachers</h1>
+                            <h1 className="db-page-title"><i className="fas fa-chalkboard-teacher"></i> Teachers</h1>
                             <p className="db-page-sub">Manage teaching staff and their system login access</p>
                         </div>
                         {can('teachers','create') && (

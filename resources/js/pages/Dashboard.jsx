@@ -128,7 +128,7 @@ export default function Dashboard() {
                 <div className="db-content">
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Dashboard</h1>
+                            <h1 className="db-page-title"><i className="fas fa-chart-pie"></i> Dashboard</h1>
                             <p className="db-page-sub">System overview &amp; analytics</p>
                         </div>
                     </div>

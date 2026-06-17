@@ -442,7 +442,7 @@ export default function Roles() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Roles</h1>
+                            <h1 className="db-page-title"><i className="fas fa-user-shield"></i> Roles</h1>
                             <p className="db-page-sub">Define and manage user roles within the system</p>
                         </div>
                         {can('roles', 'create') && (

@@ -287,7 +287,7 @@ export default function ProgramEvents() {
                     {/* Top bar */}
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Program Events</h1>
+                            <h1 className="db-page-title"><i className="fas fa-calendar-alt"></i> Program Events</h1>
                             <p className="db-page-sub">Manage events and student programme assignments</p>
                         </div>
                         {can('program_events', 'create') && (

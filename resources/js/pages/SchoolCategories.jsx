@@ -251,7 +251,7 @@ export default function SchoolCategories() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">School Categories</h1>
+                            <h1 className="db-page-title"><i className="fas fa-tags"></i> School Categories</h1>
                             <p className="db-page-sub">Organise schools into meaningful groups</p>
                         </div>
                         {can('school_categories', 'create') && (

@@ -1726,8 +1726,9 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
 }
-.db-page-title { font-size: 1.5rem; font-weight: 800; color: #081f4e; margin: 0 0 4px; }
-.db-page-sub { font-size: .83rem; color: #888; margin: 0; }
+.db-page-title { font-size: 1.5rem; font-weight: 700; color: #081f4e; margin: 0 0 4px; font-family:'Poppins',sans-serif; display:flex; align-items:center; gap:10px; }
+.db-page-title i { color: #fe730c; }
+.db-page-sub { font-size: .9rem; color: #666; margin: 4px 0 0; }
 .db-export-btn {
   display: inline-flex; align-items: center; gap: 8px;
   background: linear-gradient(135deg, #081f4e, #1e40af);
@@ -1810,16 +1811,16 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
 .db-results-badge span { font-weight: 700; color: #081f4e; font-size: .95rem; }
 
 /* Table */
-.db-table-wrap { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(8,31,78,.06); overflow-x: auto; overflow-y: visible; }
+.db-table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.08); overflow-x: auto; overflow-y: visible; }
 .db-table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: .83rem; }
-.db-table thead tr { background: #f7f9fc; }
+.db-table thead tr { background: #081f4e; }
 .db-table th {
-  padding: 14px 16px; text-align: left; font-family: 'Poppins', sans-serif;
-  font-size: .72rem; font-weight: 700; color: #888; letter-spacing: .6px;
-  text-transform: uppercase; white-space: nowrap; border-bottom: 1px solid #eef0f6;
+  padding: 12px 16px; text-align: left; font-family: 'Poppins', sans-serif;
+  font-size: .8rem; font-weight: 600; color: #fff; letter-spacing: 0;
+  text-transform: none; white-space: nowrap; border-bottom: none;
 }
 .db-th-sort { cursor: pointer; user-select: none; }
-.db-th-sort:hover { color: #081f4e; }
+.db-th-sort:hover { color: rgba(255,255,255,.7); }
 .db-table td { padding: 14px 16px; border-bottom: 1px solid #f4f5f9; vertical-align: middle; }
 .db-row:last-child td { border-bottom: none; }
 .db-row:hover td { background: #fafbff; }
@@ -2280,11 +2281,11 @@ body.sidebar-collapsed .db-main { margin-left: 64px; }
    SCHOOLS PAGE
 ══════════════════════════════════════════════════════════ */
 /* Stats row */
-.schools-stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:24px; }
-.schools-stat-card { background:#fff; border-radius:14px; padding:18px 22px; display:flex; align-items:center; gap:16px; box-shadow:0 2px 12px rgba(8,31,78,.06); border:1px solid rgba(8,31,78,.06); }
-.schools-stat-icon { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; flex-shrink:0; }
-.schools-stat-value { font-family:'Poppins',sans-serif; font-size:1.7rem; font-weight:800; color:#081f4e; line-height:1; }
-.schools-stat-label { font-size:.78rem; color:#9ca3af; margin-top:3px; }
+.schools-stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.schools-stat-card { background:#fff; border-radius:12px; padding:18px 20px; display:flex; align-items:center; gap:16px; box-shadow:0 1px 6px rgba(0,0,0,.08); border-left:4px solid #8b5cf6; }
+.schools-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1rem; flex-shrink:0; }
+.schools-stat-value { font-family:'Poppins',sans-serif; font-size:1.4rem; font-weight:800; color:#081f4e; line-height:1; }
+.schools-stat-label { font-size:.78rem; color:#6b7280; margin-top:4px; font-weight:600; }
 
 /* Primary action button (top-right "Add School") */
 .db-btn-primary {

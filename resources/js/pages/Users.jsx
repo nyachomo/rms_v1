@@ -458,7 +458,7 @@ export default function Users() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Users</h1>
+                            <h1 className="db-page-title"><i className="fas fa-users-cog"></i> Users</h1>
                             <p className="db-page-sub">Manage system users and their assigned roles</p>
                         </div>
                         {can('users', 'create') && (

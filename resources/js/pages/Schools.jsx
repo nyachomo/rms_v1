@@ -706,7 +706,7 @@ export default function Schools() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Schools</h1>
+                            <h1 className="db-page-title"><i className="fas fa-school"></i> Schools</h1>
                             <p className="db-page-sub">Manage partner schools and institutions</p>
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>

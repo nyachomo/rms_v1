@@ -388,7 +388,7 @@ export default function Classes() {
                     {/* Top bar */}
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Classes</h1>
+                            <h1 className="db-page-title"><i className="fas fa-chalkboard"></i> Classes</h1>
                             <p className="db-page-sub">Manage class groups, capacity and assigned teachers</p>
                         </div>
                         {can('classes', 'create') && (

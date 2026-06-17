@@ -595,7 +595,7 @@ function AdminScoresInner({ token }) {
 
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Student Scores</h1>
+                            <h1 className="db-page-title"><i className="fas fa-graduation-cap"></i> Student Scores</h1>
                             <p className="db-page-sub">Gradebook — scores per assessment, module and course</p>
                         </div>
                     </div>

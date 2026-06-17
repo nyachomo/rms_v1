@@ -252,7 +252,7 @@ export default function ManualGradebook() {
 
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Manual Gradebook</h1>
+                            <h1 className="db-page-title"><i className="fas fa-table"></i> Manual Gradebook</h1>
                             <p className="db-page-sub">Create assessments and record student scores manually</p>
                         </div>
                     </div>

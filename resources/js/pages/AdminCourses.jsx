@@ -641,6 +641,12 @@ export default function AdminCourses() {
                 <div className="db-content">
                     {!can('courses', 'view') && <AccessDenied />}
                     {can('courses', 'view') && <>
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-book-open"></i> Courses</h1>
+                            <p className="db-page-sub">Manage training courses, curriculum and enrolment</p>
+                        </div>
+                    </div>
                     {/* ── Stat Cards ── */}
                     <div className="db-stats-row">
                         <div className="db-stat-card" style={{ background: 'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)' }}>

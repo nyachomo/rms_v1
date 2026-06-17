@@ -963,7 +963,7 @@ export default function AdminEnrollments() {
 
                 <div className="db-topbar">
                     <div>
-                        <h1 className="db-page-title">Enrollments</h1>
+                        <h1 className="db-page-title"><i className="fas fa-file-alt"></i> Enrollments</h1>
                         <p className="db-page-sub">Review and manage course enrollment applications</p>
                     </div>
                 </div>

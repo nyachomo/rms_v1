@@ -272,33 +272,11 @@ export default function AdminIctClub() {
                 <div className="db-content" style={{ background:'#f4f6fb' }}>
                     <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message:'', type:'' })} />
 
-                    {/* Header banner */}
-                    <div style={{ background:'linear-gradient(135deg,#0d9488 0%,#0f766e 55%,#134e4a 100%)', borderRadius:20, padding:'28px 32px', marginBottom:28, position:'relative', overflow:'hidden' }}>
-                        <div style={{ position:'absolute', top:-40, right:-40, width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,.05)', pointerEvents:'none' }}></div>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:16, position:'relative' }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                                <div style={{ width:52, height:52, borderRadius:15, background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                    <i className="fas fa-laptop-code" style={{ color:'#fff', fontSize:'1.3rem' }}></i>
-                                </div>
-                                <div>
-                                    <h1 style={{ margin:0, fontSize:'1.5rem', fontWeight:900, color:'#fff', fontFamily:'Poppins,sans-serif' }}>ICT Club Registrations</h1>
-                                    <p style={{ margin:'3px 0 0', color:'rgba(255,255,255,.6)', fontSize:'.82rem', fontFamily:'Poppins,sans-serif' }}>
-                                        Review and manage ICT club membership applications
-                                    </p>
-                                </div>
-                            </div>
-                            <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                                {[
-                                    { icon:'fas fa-users',           label:`${meta.total ?? 0} Total`,      color:'rgba(255,255,255,.12)', text:'rgba(255,255,255,.85)' },
-                                    { icon:'fas fa-hourglass-half',  label:`${counts.pending} Pending`,     color:'rgba(245,158,11,.2)',   text:'#fbbf24' },
-                                    { icon:'fas fa-check-circle',    label:`${counts.approved} Approved`,   color:'rgba(255,255,255,.1)',  text:'rgba(255,255,255,.8)' },
-                                ].map((b,i) => (
-                                    <div key={i} style={{ display:'flex', alignItems:'center', gap:7, background:b.color, borderRadius:10, padding:'7px 14px', border:`1px solid ${b.color}` }}>
-                                        <i className={b.icon} style={{ color:b.text, fontSize:'.75rem' }}></i>
-                                        <span style={{ color:b.text, fontFamily:'Poppins,sans-serif', fontSize:'.78rem', fontWeight:700 }}>{b.label}</span>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Header */}
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-laptop-code"></i> ICT Club Registrations</h1>
+                            <p className="db-page-sub">Review and manage ICT club membership applications</p>
                         </div>
                     </div>
 
@@ -358,17 +336,15 @@ export default function AdminIctClub() {
 
                     {/* Table */}
                     <div style={{ background:'#fff', borderRadius:18, boxShadow:'0 2px 12px rgba(0,0,0,.06)', border:'1px solid #eef0f6', overflow:'hidden' }}>
-                        <div style={{ background:'linear-gradient(135deg,#0d9488,#0f766e)' }}>
-                            <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                        <table style={{ width:'100%', borderCollapse:'collapse' }}>
                                 <thead>
-                                    <tr>
+                                    <tr style={{ background:'#081f4e' }}>
                                         {['#','Member','Track','School','Applied','Status','Actions'].map(h => (
-                                            <th key={h} style={{ padding:'14px 16px', textAlign:'left', color:'rgba(255,255,255,.85)', fontSize:'.68rem', fontFamily:'Poppins,sans-serif', fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', whiteSpace:'nowrap' }}>{h}</th>
+                                            <th key={h} style={{ padding:'12px 16px', textAlign:'left', color:'#fff', fontSize:'.82rem', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                             </table>
-                        </div>
                         <div style={{ overflowX:'auto' }}>
                             <table style={{ width:'100%', borderCollapse:'collapse' }}>
                                 <tbody>

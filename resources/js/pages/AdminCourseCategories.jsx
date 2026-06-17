@@ -336,61 +336,32 @@ export default function AdminCourseCategories() {
                     {!can('course_categories', 'view') && <AccessDenied />}
                     {can('course_categories', 'view') && <>
 
-                    {/* ── Hero banner ── */}
-                    <div style={{ background: 'linear-gradient(135deg,#081f4e 0%,#0d2d6b 55%,#1e1b4b 100%)', borderRadius: 18, padding: '30px 34px', marginBottom: 26, position: 'relative', overflow: 'hidden' }}>
-                        {/* decorative blobs */}
-                        <div style={{ position: 'absolute', top: -40, right: 60,  width: 220, height: 220, borderRadius: '50%', background: 'rgba(254,115,12,.08)', pointerEvents: 'none' }}></div>
-                        <div style={{ position: 'absolute', bottom: -30, right: -20, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }}></div>
-
-                        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                                <div style={{ width: 58, height: 58, borderRadius: 16, background: 'linear-gradient(135deg,#fe730c,#f97316)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', color: '#fff', boxShadow: '0 10px 24px rgba(254,115,12,.4)', flexShrink: 0 }}>
-                                    <i className="fas fa-tags"></i>
-                                </div>
-                                <div>
-                                    <h1 style={{ margin: 0, color: '#fff', fontFamily: 'Poppins,sans-serif', fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2 }}>Course Categories</h1>
-                                    <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,.45)', fontSize: '.83rem' }}>Organise courses into logical learning tracks</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    {[
-                                        { icon: 'fa-layer-group',  val: total,        label: 'Total',         bg: 'rgba(255,255,255,.12)', color: '#fff' },
-                                        { icon: 'fa-check-circle', val: active,       label: 'Active',        bg: 'rgba(16,185,129,.2)',   color: '#6ee7b7' },
-                                        { icon: 'fa-book-open',    val: totalCourses, label: 'Courses Linked',bg: 'rgba(254,115,12,.2)',   color: '#fdba74' },
-                                    ].map(s => (
-                                        <div key={s.label} style={{ background: s.bg, borderRadius: 50, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
-                                            <i className={`fas ${s.icon}`} style={{ color: s.color, fontSize: '.78rem' }}></i>
-                                            <span style={{ color: s.color, fontWeight: 700, fontSize: '.82rem' }}>{s.val}</span>
-                                            <span style={{ color: `${s.color}99`, fontSize: '.75rem' }}>{s.label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                {can('course_categories', 'create') && (
-                                    <button onClick={() => setModal({ type: 'add' })}
-                                        style={{ background: 'linear-gradient(135deg,#fe730c,#f97316)', color: '#fff', border: 'none', borderRadius: 11, padding: '11px 22px', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.87rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, boxShadow: '0 6px 18px rgba(254,115,12,.45)', whiteSpace: 'nowrap' }}>
-                                        <i className="fas fa-plus"></i> Add Category
-                                    </button>
-                                )}
-                            </div>
+                    {/* Header */}
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-tags"></i> Course Categories</h1>
+                            <p className="db-page-sub">Organise courses into logical learning tracks</p>
                         </div>
+                        {can('course_categories', 'create') && (
+                            <button className="db-btn-primary" onClick={() => setModal({ type: 'add' })}>
+                                <i className="fas fa-plus"></i> Add Category
+                            </button>
+                        )}
                     </div>
-
-                    {/* ── Stat cards ── */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+                    <div className="schools-stats-row">
                         {[
-                            { label: 'Total Categories', value: total,        icon: 'fas fa-tags',          color: '#081f4e', bg: '#eef1fb' },
-                            { label: 'Active',           value: active,       icon: 'fas fa-check-circle',  color: '#16a34a', bg: '#f0fdf4' },
-                            { label: 'Inactive',         value: inactive,     icon: 'fas fa-pause-circle',  color: '#9ca3af', bg: '#f9fafb' },
-                            { label: 'Courses Linked',   value: totalCourses, icon: 'fas fa-book-open',     color: '#fe730c', bg: '#fff7ed' },
+                            { label: 'Total Categories', value: total,        icon: 'fas fa-tags',         borderColor: '#6366f1' },
+                            { label: 'Active',           value: active,       icon: 'fas fa-check-circle', borderColor: '#10b981' },
+                            { label: 'Inactive',         value: inactive,     icon: 'fas fa-pause-circle', borderColor: '#94a3b8' },
+                            { label: 'Courses Linked',   value: totalCourses, icon: 'fas fa-book-open',    borderColor: '#fe730c' },
                         ].map(s => (
-                            <div key={s.label} style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1.5px solid #e8edf5', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 8px rgba(8,31,78,.04)' }}>
-                                <div style={{ width: 46, height: 46, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, fontSize: '1.1rem', flexShrink: 0 }}>
+                            <div key={s.label} className="schools-stat-card" style={{ borderLeftColor: s.borderColor }}>
+                                <div className="schools-stat-icon" style={{ background: s.borderColor }}>
                                     <i className={s.icon}></i>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif', lineHeight: 1 }}>{s.value}</div>
-                                    <div style={{ fontSize: '.75rem', color: '#6b7280', marginTop: 3, fontWeight: 500 }}>{s.label}</div>
+                                    <div className="schools-stat-value">{s.value}</div>
+                                    <div className="schools-stat-label">{s.label}</div>
                                 </div>
                             </div>
                         ))}

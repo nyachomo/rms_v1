@@ -302,6 +302,12 @@ export default function Intakes() {
                     {!can('intakes','view') && <AccessDenied />}
                     {can('intakes','view') && (<>
 
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-calendar-check"></i> Intakes</h1>
+                            <p className="db-page-sub">Manage enrolment intakes and their status</p>
+                        </div>
+                    </div>
                     {/* ── Stat Cards ── */}
                     <div className="db-stats-row">
                         <div className="db-stat-card" style={{ background:'linear-gradient(135deg,#0d9488,#14b8a6)' }}>

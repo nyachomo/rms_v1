@@ -202,12 +202,11 @@ export default function MyTechsphereClasses() {
                 <div className="db-content">
                     <Toast toast={toast} />
 
-                    {/* Page header */}
-                    <div style={{ background: '#fff', borderRadius: 18, border: '1.5px solid #e8ecf4', padding: '24px 28px', marginBottom: 24, boxShadow: '0 2px 12px rgba(8,31,78,.05)' }}>
-                        <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif' }}>My Techsphere Classes</h1>
-                        <p style={{ margin: '4px 0 0', fontSize: '.82rem', color: '#64748b', fontFamily: 'Poppins,sans-serif' }}>
-                            {loading ? 'Loading…' : `${classes.length} class${classes.length !== 1 ? 'es' : ''} enrolled`}
-                        </p>
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-laptop-code"></i> My Classes</h1>
+                            <p className="db-page-sub">Your enrolled Techsphere online classes</p>
+                        </div>
                     </div>
 
                     {/* Class cards */}

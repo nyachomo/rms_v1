@@ -540,7 +540,7 @@ export default function Students() {
 
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Students</h1>
+                            <h1 className="db-page-title"><i className="fas fa-user-graduate"></i> Students</h1>
                             <p className="db-page-sub">Manage enrolled students and their system login access</p>
                         </div>
                         {can('students','create') && (

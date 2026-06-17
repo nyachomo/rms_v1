@@ -259,7 +259,7 @@ export default function SchoolLevels() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">School Levels</h1>
+                            <h1 className="db-page-title"><i className="fas fa-layer-group"></i> School Levels</h1>
                             <p className="db-page-sub">Define education levels such as Primary, Secondary, University…</p>
                         </div>
                         {can('school_levels', 'create') && (

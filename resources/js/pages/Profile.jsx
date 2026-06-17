@@ -186,7 +186,7 @@ export default function Profile() {
                 <div className="db-content">
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">My Profile</h1>
+                            <h1 className="db-page-title"><i className="fas fa-user-cog"></i> My Profile</h1>
                             <p className="db-page-sub">Manage your account information and security</p>
                         </div>
                     </div>

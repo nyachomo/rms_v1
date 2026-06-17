@@ -172,7 +172,7 @@ export default function Settings() {
                     <>
                     <div className="db-topbar">
                         <div>
-                            <h1 className="db-page-title">Company Settings</h1>
+                            <h1 className="db-page-title"><i className="fas fa-cog"></i> Company Settings</h1>
                             <p className="db-page-sub">Manage your organisation's details and branding</p>
                         </div>
                     </div>

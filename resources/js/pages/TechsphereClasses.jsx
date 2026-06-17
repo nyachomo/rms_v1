@@ -822,32 +822,35 @@ export default function TechsphereClasses() {
                 <div className="db-content">
                     <Toast toast={toast} />
 
-                    {/* Header — admin stats only shown to users with create/edit access */}
-                    {can('techsphere_classes', 'create') || can('techsphere_classes', 'edit') ? (
-                        <div style={{ background: '#fff', borderRadius: 18, border: '1.5px solid #e8ecf4', padding: '24px 28px', marginBottom: 24, boxShadow: '0 2px 12px rgba(8,31,78,.05)' }}>
-                            <div style={{ marginBottom: 20 }}>
-                                <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif' }}>Techsphere Classes</h1>
-                                <p style={{ margin: '4px 0 0', fontSize: '.82rem', color: '#64748b', fontFamily: 'Poppins,sans-serif' }}>{meta.total} class{meta.total !== 1 ? 'es' : ''} total</p>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 16 }}>
-                                {[
-                                    { label: 'Total Classes', value: meta.total,    icon: 'fas fa-chalkboard',   bg: '#eff6ff', color: '#1d4ed8' },
-                                    { label: 'Active',         value: totalActive,   icon: 'fas fa-check-circle', bg: '#f0fdf4', color: '#16a34a' },
-                                    { label: 'Archived',       value: totalArchived, icon: 'fas fa-archive',      bg: '#f8fafc', color: '#64748b' },
-                                ].map(s => (
-                                    <div key={s.label} style={{ background: '#f8fafc', borderRadius: 14, padding: '18px 20px', border: '1.5px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 14 }}>
-                                        <div style={{ width: 42, height: 42, borderRadius: 11, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <i className={s.icon} style={{ color: s.color, fontSize: '1rem' }}></i>
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#081f4e', fontFamily: 'Poppins,sans-serif', lineHeight: 1 }}>{s.value}</div>
-                                            <div style={{ fontSize: '.72rem', color: '#64748b', fontFamily: 'Poppins,sans-serif', marginTop: 3 }}>{s.label}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Header */}
+                    <div className="db-topbar">
+                        <div>
+                            <h1 className="db-page-title"><i className="fas fa-laptop-code"></i> Techsphere Classes</h1>
+                            <p className="db-page-sub">Manage online training classes, teachers and enrolled students</p>
                         </div>
-                    ) : null}
+                        {can('techsphere_classes', 'create') && (
+                            <button className="db-btn-primary" onClick={() => setAddModal(true)}>
+                                <i className="fas fa-plus"></i> Add Class
+                            </button>
+                        )}
+                    </div>
+                    <div className="schools-stats-row">
+                        {[
+                            { label: 'Total Classes', value: meta.total,    icon: 'fas fa-laptop-code',  color: '#1d4ed8', borderColor: '#3b82f6' },
+                            { label: 'Active',         value: totalActive,   icon: 'fas fa-check-circle', color: '#16a34a', borderColor: '#10b981' },
+                            { label: 'Archived',       value: totalArchived, icon: 'fas fa-archive',      color: '#64748b', borderColor: '#94a3b8' },
+                        ].map(s => (
+                            <div key={s.label} className="schools-stat-card" style={{ borderLeftColor: s.borderColor }}>
+                                <div className="schools-stat-icon" style={{ background: s.borderColor }}>
+                                    <i className={s.icon}></i>
+                                </div>
+                                <div>
+                                    <div className="schools-stat-value">{s.value}</div>
+                                    <div className="schools-stat-label">{s.label}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
 
                     {/* Filters */}
                     <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e8ecf4', padding: '16px 20px', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -861,12 +864,6 @@ export default function TechsphereClasses() {
                                 style={{ width: '100%', padding: '10px 12px 10px 34px', borderRadius: 9, border: '1.5px solid #e8ecf4', fontFamily: 'Poppins,sans-serif', fontSize: '.83rem', outline: 'none', boxSizing: 'border-box' }}
                             />
                         </div>
-                        {can('techsphere_classes', 'create') && (
-                            <button onClick={() => setAddModal(true)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 9, background: 'linear-gradient(135deg,#081f4e,#0d2d6b)', color: '#fff', border: 'none', fontFamily: 'Poppins,sans-serif', fontSize: '.83rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                <i className="fas fa-plus"></i> Add Class
-                            </button>
-                        )}
                         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
                             style={{ padding: '10px 12px', borderRadius: 9, border: '1.5px solid #e8ecf4', fontFamily: 'Poppins,sans-serif', fontSize: '.83rem', outline: 'none', background: '#fff', minWidth: 130 }}>
                             <option value="">All Statuses</option>
@@ -900,9 +897,9 @@ export default function TechsphereClasses() {
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Poppins,sans-serif', fontSize: '.83rem' }}>
                                     <thead>
-                                        <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e8ecf4' }}>
+                                        <tr style={{ background: '#081f4e' }}>
                                             {['Class Name', 'Teachers', 'Venue', 'Capacity', 'Status', 'Zoom Meeting', 'Created', 'Actions'].map(h => (
-                                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '.75rem', textTransform: 'uppercase', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#fff', fontSize: '.82rem', whiteSpace: 'nowrap' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
