@@ -665,48 +665,59 @@ export default function AdminCourses() {
                         ))}
                     </div>
 
-                    {/* ── Category quick-filters (from DB) ── */}
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                        {[{ slug: '', name: 'All', icon: 'fas fa-th-large', color: '#081f4e' },
-                          ...dbCategories.map(c => ({ slug: c.slug, name: c.name, icon: c.icon || 'fas fa-tag', color: CAT[c.slug]?.color ?? '#6b7280' }))
-                        ].map(f => (
-                            <button key={f.slug} onClick={() => setCatFilter(f.slug)}
-                                style={{ padding: '7px 16px', borderRadius: 20, border: catFilter === f.slug ? `2px solid ${f.color}` : '1.5px solid #e8eaf0', background: catFilter === f.slug ? f.color + '15' : '#fff', color: catFilter === f.slug ? f.color : '#555', cursor: 'pointer', fontFamily: 'Poppins, sans-serif', fontSize: '.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, transition: 'all .2s' }}>
-                                <i className={f.icon} style={{ fontSize: '.7rem' }}></i> {f.name}
-                            </button>
-                        ))}
-                    </div>
+                    {/* ── Filters card ── */}
+                    <div style={{ background: '#fff', borderRadius: 16, padding: '14px 20px', boxShadow: '0 2px 10px rgba(0,0,0,.05)', border: '1px solid #eef0f6', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-                    {/* ── Controls ── */}
-                    <div className="db-controls">
-                        <div className="db-search-wrap" style={{ flex: 1 }}>
-                            <i className="fas fa-search db-search-icon"></i>
-                            <input className="db-search" placeholder="Search by title, slug, or category…" value={search} onChange={e => setSearch(e.target.value)} />
+                        {/* Category quick-filters (from DB) */}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {[{ slug: '', name: 'All', icon: 'fas fa-th-large', color: '#081f4e' },
+                              ...dbCategories.map(c => ({ slug: c.slug, name: c.name, icon: c.icon || 'fas fa-tag', color: CAT[c.slug]?.color ?? '#6b7280' }))
+                            ].map(f => (
+                                <button key={f.slug} onClick={() => setCatFilter(f.slug)}
+                                    style={{ padding: '7px 16px', borderRadius: 20, border: catFilter === f.slug ? `2px solid ${f.color}` : '1.5px solid #e8eaf0', background: catFilter === f.slug ? f.color + '15' : '#fff', color: catFilter === f.slug ? f.color : '#555', cursor: 'pointer', fontFamily: 'Poppins, sans-serif', fontSize: '.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, transition: 'all .2s' }}>
+                                    <i className={f.icon} style={{ fontSize: '.7rem' }}></i> {f.name}
+                                </button>
+                            ))}
                         </div>
-                        <select className="db-filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="archived">Archived</option>
-                        </select>
-                        {can('courses', 'create') && (
-                        <button className="btn-add-new" onClick={() => { setEditCourse(null); setCourseModal(true); }}>
-                            <i className="fas fa-plus"></i> Add Course
-                        </button>
-                        )}
-                    </div>
 
-                    {/* ── Count + per-page ── */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <span style={{ fontSize: '.78rem', color: '#888', fontFamily: 'Poppins, sans-serif' }}>
-                            {meta ? <><strong style={{ color: '#081f4e' }}>{meta.from ?? 0}–{meta.to ?? 0}</strong> of <strong style={{ color: '#081f4e' }}>{meta.total ?? 0}</strong> courses</> : ''}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.78rem', color: '#888', fontFamily: 'Poppins, sans-serif' }}>
-                            Show
-                            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} style={{ padding: '3px 8px', borderRadius: 6, border: '1.5px solid #e8eaf0', fontFamily: 'Poppins, sans-serif', fontSize: '.78rem', color: '#374151' }}>
-                                {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+                        {/* Search + Status + Add Course */}
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ flex: '1 1 220px', position: 'relative' }}>
+                                <i className="fas fa-search" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', fontSize: '.82rem' }}></i>
+                                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by title, slug, or category…"
+                                    style={{ width: '100%', paddingLeft: 38, paddingRight: 14, paddingTop: 9, paddingBottom: 9, border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', outline: 'none', color: '#374151', background: '#f8faff', boxSizing: 'border-box' }}
+                                    onFocus={e => e.target.style.borderColor = '#fe730c'} onBlur={e => e.target.style.borderColor = '#e8eaf0'} />
+                            </div>
+                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                                style={{ padding: '9px 14px', border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', color: '#374151', background: '#f8faff', outline: 'none', cursor: 'pointer' }}>
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="archived">Archived</option>
                             </select>
-                            per page
+                            {can('courses', 'create') && (
+                                <button onClick={() => { setEditCourse(null); setCourseModal(true); }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg,#fe730c,#f97316)', border: 'none', borderRadius: 10, padding: '9px 16px', color: '#fff', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(254,115,12,.35)', whiteSpace: 'nowrap', flexShrink: 0 }}
+                                    onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
+                                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                                    <i className="fas fa-plus" style={{ fontSize: '.78rem' }}></i> Add Course
+                                </button>
+                            )}
                         </div>
+
+                        {/* Count + per-page */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '.78rem', color: '#888', fontFamily: 'Poppins, sans-serif' }}>
+                                {meta ? <><strong style={{ color: '#081f4e' }}>{meta.from ?? 0}–{meta.to ?? 0}</strong> of <strong style={{ color: '#081f4e' }}>{meta.total ?? 0}</strong> courses</> : ''}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.78rem', color: '#888', fontFamily: 'Poppins, sans-serif' }}>
+                                Show
+                                <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} style={{ padding: '3px 8px', borderRadius: 6, border: '1.5px solid #e8eaf0', fontFamily: 'Poppins, sans-serif', fontSize: '.78rem', color: '#374151' }}>
+                                    {[10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                                per page
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* ── Table ── */}
