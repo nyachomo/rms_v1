@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassAssessment;
 use App\Models\ClassAssessmentSubmission;
-use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ClassAssessmentController extends Controller
 {
-    private function withRelations()
+    private function withRelations(): array
     {
         return ['techsphereClass:id,name', 'course:id,title,slug', 'module:id,title'];
     }
@@ -27,20 +27,17 @@ class ClassAssessmentController extends Controller
             $s = $request->search;
             $query->where('title', 'like', "%{$s}%");
         }
-
         if ($request->filled('techsphere_class_id')) {
             $query->where('techsphere_class_id', $request->techsphere_class_id);
         }
-
         if ($request->filled('course_id')) {
             $query->where('course_id', $request->course_id);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $perPage = min((int) ($request->get('per_page', 15)), 200);
+        $perPage = min((int) $request->input('per_page', 15), 200);
 
         return response()->json($query->orderByDesc('created_at')->paginate($perPage));
     }
@@ -50,17 +47,16 @@ class ClassAssessmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'                => 'required|string|max:255',
-            'description'          => 'nullable|string',
-            'techsphere_class_id'  => 'nullable|exists:techsphere_classes,id',
-            'course_id'            => 'nullable|exists:courses,id',
-            'module_id'            => 'nullable|exists:course_modules,id',
-            'due_date'             => 'nullable|date',
-            'status'               => 'required|in:active,closed,draft',
+            'title'               => 'required|string|max:255',
+            'description'         => 'nullable|string',
+            'techsphere_class_id' => 'nullable|exists:techsphere_classes,id',
+            'course_id'           => 'nullable|exists:courses,id',
+            'module_id'           => 'nullable|exists:course_modules,id',
+            'due_date'            => 'nullable|date',
+            'status'              => 'required|in:active,closed,draft',
         ]);
 
         $data['created_by'] = Auth::id();
-
         $assessment = ClassAssessment::create($data);
 
         return response()->json(['assessment' => $assessment->load($this->withRelations())], 201);
@@ -71,13 +67,13 @@ class ClassAssessmentController extends Controller
     public function update(Request $request, ClassAssessment $assessment): JsonResponse
     {
         $data = $request->validate([
-            'title'                => 'required|string|max:255',
-            'description'          => 'nullable|string',
-            'techsphere_class_id'  => 'nullable|exists:techsphere_classes,id',
-            'course_id'            => 'nullable|exists:courses,id',
-            'module_id'            => 'nullable|exists:course_modules,id',
-            'due_date'             => 'nullable|date',
-            'status'               => 'required|in:active,closed,draft',
+            'title'               => 'required|string|max:255',
+            'description'         => 'nullable|string',
+            'techsphere_class_id' => 'nullable|exists:techsphere_classes,id',
+            'course_id'           => 'nullable|exists:courses,id',
+            'module_id'           => 'nullable|exists:course_modules,id',
+            'due_date'            => 'nullable|date',
+            'status'              => 'required|in:active,closed,draft',
         ]);
 
         $assessment->update($data);
@@ -139,10 +135,10 @@ class ClassAssessmentController extends Controller
 
     // ─── Admin: List submissions for an assessment ──────────────────────────
 
-    public function adminSubmissions(Request $request, ClassAssessment $assessment): JsonResponse
+    public function adminSubmissions(ClassAssessment $assessment): JsonResponse
     {
         $submissions = $assessment->submissions()
-            ->with(['student.user', 'markedBy'])
+            ->with(['user:id,name,email', 'markedBy:id,name'])
             ->get();
 
         return response()->json([
@@ -164,7 +160,7 @@ class ClassAssessmentController extends Controller
         return response()->download($path, $submission->submission_file_name ?? basename($path));
     }
 
-    // ─── Admin: Upload marked file + grade/feedback ──────────────────────────
+    // ─── Admin: Mark submission (grade + optional file) ──────────────────────
 
     public function markSubmission(Request $request, ClassAssessment $assessment, ClassAssessmentSubmission $submission): JsonResponse
     {
@@ -197,7 +193,7 @@ class ClassAssessmentController extends Controller
 
         $submission->update($update);
 
-        return response()->json(['submission' => $submission->fresh()->load(['student.user', 'markedBy'])]);
+        return response()->json(['submission' => $submission->fresh()->load(['user:id,name,email', 'markedBy:id,name'])]);
     }
 
     // ─── Admin: Remove marked file ───────────────────────────────────────────
@@ -213,7 +209,7 @@ class ClassAssessmentController extends Controller
             'marked_file_name' => null,
         ]);
 
-        return response()->json(['submission' => $submission->fresh()->load(['student.user', 'markedBy'])]);
+        return response()->json(['submission' => $submission->fresh()->load(['user:id,name,email', 'markedBy:id,name'])]);
     }
 
     // ─── Student: List assessments visible to this user ─────────────────────
@@ -222,14 +218,12 @@ class ClassAssessmentController extends Controller
     {
         $userId = Auth::id();
 
-        // Get techsphere class IDs this user is enrolled in
-        $enrolledClassIds = \DB::table('techsphere_class_user')
+        $enrolledClassIds = DB::table('techsphere_class_user')
             ->where('user_id', $userId)
             ->pluck('techsphere_class_id');
 
         $assessments = ClassAssessment::with($this->withRelations())
             ->where(function ($q) use ($enrolledClassIds) {
-                // Assessments assigned to one of the user's classes, or open to all (no class)
                 $q->whereIn('techsphere_class_id', $enrolledClassIds)
                   ->orWhereNull('techsphere_class_id');
             })
@@ -237,13 +231,10 @@ class ClassAssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // Attach this student's submission info (look up student record)
-        $student = Student::where('user_id', $userId)->first();
-
-        $assessments->each(function ($assessment) use ($student) {
-            $assessment->my_submission = $student
-                ? $assessment->submissions()->where('student_id', $student->id)->first()
-                : null;
+        $assessments->each(function ($assessment) use ($userId) {
+            $assessment->my_submission = $assessment->submissions()
+                ->where('user_id', $userId)
+                ->first();
         });
 
         return response()->json(['assessments' => $assessments]);
@@ -253,7 +244,7 @@ class ClassAssessmentController extends Controller
 
     public function studentDownload(ClassAssessment $assessment)
     {
-        $this->authorizeStudentUserAccess($assessment);
+        $this->authorizeStudentAccess($assessment);
 
         abort_if(!$assessment->assessment_file_path, 404, 'No file available for this assessment.');
 
@@ -267,7 +258,7 @@ class ClassAssessmentController extends Controller
 
     public function studentSubmit(Request $request, ClassAssessment $assessment): JsonResponse
     {
-        $this->authorizeStudentUserAccess($assessment);
+        $this->authorizeStudentAccess($assessment);
 
         abort_if($assessment->status === 'closed', 403, 'This assessment is closed for submissions.');
 
@@ -275,11 +266,10 @@ class ClassAssessmentController extends Controller
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip|max:20480',
         ]);
 
-        $student = Student::where('user_id', Auth::id())->firstOrFail();
-
+        $userId     = Auth::id();
         $submission = ClassAssessmentSubmission::firstOrNew([
             'assessment_id' => $assessment->id,
-            'student_id'    => $student->id,
+            'user_id'       => $userId,
         ]);
 
         if ($submission->exists) {
@@ -313,12 +303,10 @@ class ClassAssessmentController extends Controller
 
     public function studentDeleteSubmission(ClassAssessment $assessment): JsonResponse
     {
-        $this->authorizeStudentUserAccess($assessment);
-
-        $student = Student::where('user_id', Auth::id())->firstOrFail();
+        $this->authorizeStudentAccess($assessment);
 
         $submission = ClassAssessmentSubmission::where('assessment_id', $assessment->id)
-            ->where('student_id', $student->id)
+            ->where('user_id', Auth::id())
             ->firstOrFail();
 
         $this->deleteFile($submission->submission_file_path);
@@ -332,10 +320,8 @@ class ClassAssessmentController extends Controller
 
     public function studentDownloadMarked(ClassAssessment $assessment)
     {
-        $student = Student::where('user_id', Auth::id())->firstOrFail();
-
         $submission = ClassAssessmentSubmission::where('assessment_id', $assessment->id)
-            ->where('student_id', $student->id)
+            ->where('user_id', Auth::id())
             ->firstOrFail();
 
         abort_if(!$submission->marked_file_path, 404, 'No marked file available yet.');
@@ -348,11 +334,11 @@ class ClassAssessmentController extends Controller
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    private function authorizeStudentUserAccess(ClassAssessment $assessment): void
+    private function authorizeStudentAccess(ClassAssessment $assessment): void
     {
         if (is_null($assessment->techsphere_class_id)) return;
 
-        $enrolled = \DB::table('techsphere_class_user')
+        $enrolled = DB::table('techsphere_class_user')
             ->where('user_id', Auth::id())
             ->where('techsphere_class_id', $assessment->techsphere_class_id)
             ->exists();

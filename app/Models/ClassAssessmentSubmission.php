@@ -9,7 +9,7 @@ class ClassAssessmentSubmission extends Model
 {
     protected $fillable = [
         'assessment_id',
-        'student_id',
+        'user_id',
         'submission_file_path',
         'submission_file_name',
         'submitted_at',
@@ -32,9 +32,9 @@ class ClassAssessmentSubmission extends Model
         return $this->belongsTo(ClassAssessment::class, 'assessment_id');
     }
 
-    public function student(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function markedBy(): BelongsTo

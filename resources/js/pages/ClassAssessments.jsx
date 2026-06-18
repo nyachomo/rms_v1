@@ -339,7 +339,7 @@ function MarkModal({ submission, assessment, token, onClose, onSaved }) {
                 </div>
 
                 <p style={{ margin: '0 0 16px', fontSize: '.8rem', color: '#6b7280' }}>
-                    Student: <strong>{submission.student?.name}</strong>
+                    Student: <strong>{submission.user?.name || submission.user?.email || '—'}</strong>
                 </p>
 
                 <div style={{ marginBottom: 14 }}>
@@ -478,8 +478,8 @@ function SubmissionsPanel({ assessment, token, onClose, onAssessmentUpdated }) {
                                     <div key={sub.id} style={{ border: '1.5px solid #f1f5f9', borderRadius: 12, padding: '16px 18px', background: '#fafafa' }}>
                                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                                             <div>
-                                                <div style={{ fontWeight: 700, color: '#111827', fontSize: '.9rem' }}>{sub.student?.name || '—'}</div>
-                                                <div style={{ fontSize: '.76rem', color: '#6b7280', marginTop: 2 }}>{sub.student?.user?.email || sub.student?.email || ''}</div>
+                                                <div style={{ fontWeight: 700, color: '#111827', fontSize: '.9rem' }}>{sub.user?.name || '—'}</div>
+                                                <div style={{ fontSize: '.76rem', color: '#6b7280', marginTop: 2 }}>{sub.user?.email || ''}</div>
                                                 {sub.submitted_at && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: 3 }}>Submitted: {new Date(sub.submitted_at).toLocaleString()}</div>}
                                             </div>
                                             <span style={{ background: ss.bg, color: ss.color, borderRadius: 20, padding: '3px 10px', fontSize: '.72rem', fontWeight: 700 }}>{ss.label}</span>
