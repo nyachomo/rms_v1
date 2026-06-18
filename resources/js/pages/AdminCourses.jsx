@@ -648,35 +648,21 @@ export default function AdminCourses() {
                         </div>
                     </div>
                     {/* ── Stat Cards ── */}
-                    <div className="db-stats-row">
-                        <div className="db-stat-card" style={{ background: 'linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)' }}>
-                            <div className="db-stat-icon" style={{ background: 'rgba(255,255,255,.18)' }}><i className="fas fa-book-open"></i></div>
-                            <div className="db-stat-info">
-                                <span className="db-stat-label">Total Courses</span>
-                                <span className="db-stat-value">{total}</span>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16, marginBottom:28 }}>
+                        {[
+                            { label:'Total Courses', value: total,                          icon:'fa-book-open',   color:'#8b5cf6' },
+                            { label:'Active',        value: active,                         icon:'fa-check-circle', color:'#10b981' },
+                            { label:'Archived',      value: archived,                       icon:'fa-archive',     color:'#f59e0b' },
+                            { label:'Total Students',value: totalStudents.toLocaleString(), icon:'fa-users',       color:'#3b82f6' },
+                        ].map(card => (
+                            <div key={card.label} style={{ background:'#fff', borderRadius:12, padding:'18px 20px', boxShadow:'0 1px 6px rgba(0,0,0,.08)', borderLeft:`4px solid ${card.color}` }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
+                                    <i className={`fas ${card.icon}`} style={{ color:card.color, fontSize:'1.1rem' }}></i>
+                                    <span style={{ color:'#666', fontSize:'.82rem', fontWeight:600, fontFamily:'Poppins,sans-serif' }}>{card.label}</span>
+                                </div>
+                                <div style={{ fontSize:'1.3rem', fontWeight:700, color:'#081f4e', fontFamily:'Poppins,sans-serif' }}>{card.value}</div>
                             </div>
-                        </div>
-                        <div className="db-stat-card" style={{ background: 'linear-gradient(135deg,#10b981 0%,#059669 100%)' }}>
-                            <div className="db-stat-icon" style={{ background: 'rgba(255,255,255,.18)' }}><i className="fas fa-check-circle"></i></div>
-                            <div className="db-stat-info">
-                                <span className="db-stat-label">Active</span>
-                                <span className="db-stat-value">{active}</span>
-                            </div>
-                        </div>
-                        <div className="db-stat-card" style={{ background: 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' }}>
-                            <div className="db-stat-icon" style={{ background: 'rgba(255,255,255,.18)' }}><i className="fas fa-archive"></i></div>
-                            <div className="db-stat-info">
-                                <span className="db-stat-label">Archived</span>
-                                <span className="db-stat-value">{archived}</span>
-                            </div>
-                        </div>
-                        <div className="db-stat-card" style={{ background: 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)' }}>
-                            <div className="db-stat-icon" style={{ background: 'rgba(255,255,255,.18)' }}><i className="fas fa-users"></i></div>
-                            <div className="db-stat-info">
-                                <span className="db-stat-label">Total Students</span>
-                                <span className="db-stat-value">{totalStudents.toLocaleString()}</span>
-                            </div>
-                        </div>
+                        ))}
                     </div>
 
                     {/* ── Category quick-filters (from DB) ── */}

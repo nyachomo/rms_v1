@@ -279,9 +279,9 @@ export default function AdminFeeManagement() {
                             <div key={card.label} style={{ background:'#fff', borderRadius:12, padding:'18px 20px', boxShadow:'0 1px 6px rgba(0,0,0,.08)', borderLeft:`4px solid ${card.color}` }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
                                     <i className={`fas ${card.icon}`} style={{ color:card.color, fontSize:'1.1rem' }}></i>
-                                    <span style={{ color:'#666', fontSize:'.82rem', fontWeight:600 }}>{card.label}</span>
+                                    <span style={{ color:'#666', fontSize:'.82rem', fontWeight:600, fontFamily:'Poppins,sans-serif' }}>{card.label}</span>
                                 </div>
-                                <div style={{ fontSize:'1.3rem', fontWeight:700, color:'#081f4e' }}>{card.value}</div>
+                                <div style={{ fontSize:'1.3rem', fontWeight:700, color:'#081f4e', fontFamily:'Poppins,sans-serif' }}>{card.value}</div>
                             </div>
                         ))}
                     </div>
