@@ -58,16 +58,43 @@ function DeleteModal({ title, onConfirm, onClose, loading }) {
 }
 
 /* ── Assessment form modal ────────────────────────────────────────────────── */
-function AssessmentModal({ item, classes, token, onClose, onSave }) {
+function AssessmentModal({ item, techsphereClasses, token, onClose, onSave }) {
     const [form, setForm] = useState({
-        title: item?.title || '',
-        description: item?.description || '',
-        class_id: item?.class_id || '',
-        due_date: item?.due_date ? item.due_date.slice(0, 16) : '',
-        status: item?.status || 'active',
+        title:                item?.title || '',
+        description:          item?.description || '',
+        techsphere_class_id:  item?.techsphere_class_id || '',
+        course_id:            item?.course_id || '',
+        module_id:            item?.module_id || '',
+        due_date:             item?.due_date ? item.due_date.slice(0, 16) : '',
+        status:               item?.status || 'active',
     });
-    const [errors, setErrors] = useState({});
-    const [saving, setSaving] = useState(false);
+    const [courses, setCourses]   = useState([]);
+    const [modules, setModules]   = useState([]);
+    const [errors, setErrors]     = useState({});
+    const [saving, setSaving]     = useState(false);
+
+    // Load courses on mount
+    useEffect(() => {
+        fetch('/api/admin/courses?per_page=200&status=active', {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+            .then(r => r.json())
+            .then(d => setCourses(d.data || []))
+            .catch(() => {});
+    }, [token]);
+
+    // Load modules whenever course changes
+    useEffect(() => {
+        setModules([]);
+        setForm(f => ({ ...f, module_id: '' }));
+        if (!form.course_id) return;
+        fetch(`/api/admin/courses/${form.course_id}/modules`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+            .then(r => r.json())
+            .then(d => setModules(Array.isArray(d) ? d : (d.data || [])))
+            .catch(() => {});
+    }, [form.course_id, token]);
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -79,7 +106,13 @@ function AssessmentModal({ item, classes, token, onClose, onSave }) {
         const res = await fetch(url, {
             method,
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ ...form, class_id: form.class_id || null, due_date: form.due_date || null }),
+            body: JSON.stringify({
+                ...form,
+                techsphere_class_id: form.techsphere_class_id || null,
+                course_id:           form.course_id || null,
+                module_id:           form.module_id || null,
+                due_date:            form.due_date || null,
+            }),
         });
         const data = await res.json();
         setSaving(false);
@@ -93,7 +126,7 @@ function AssessmentModal({ item, classes, token, onClose, onSave }) {
 
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 520, maxHeight: '90vh', overflowY: 'auto', fontFamily: 'Poppins,sans-serif', boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 540, maxHeight: '92vh', overflowY: 'auto', fontFamily: 'Poppins,sans-serif', boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                     <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#081f4e' }}>
                         <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: 'var(--red,#e53e3e)' }} />
@@ -114,30 +147,54 @@ function AssessmentModal({ item, classes, token, onClose, onSave }) {
                     {err('description')}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {/* Techsphere Class */}
+                <div style={{ marginBottom: 16 }}>
+                    <label style={lbl}>Techsphere Class</label>
+                    <select style={inp} value={form.techsphere_class_id} onChange={e => set('techsphere_class_id', e.target.value)}>
+                        <option value="">All enrolled students</option>
+                        {techsphereClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <span style={{ fontSize: '.72rem', color: '#9ca3af' }}>Leave blank to show to all students regardless of class.</span>
+                    {err('techsphere_class_id')}
+                </div>
+
+                {/* Course + Module side by side */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                     <div>
-                        <label style={lbl}>Assign to Class</label>
-                        <select style={inp} value={form.class_id} onChange={e => set('class_id', e.target.value)}>
-                            <option value="">All classes</option>
-                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        <label style={lbl}>Course</label>
+                        <select style={inp} value={form.course_id} onChange={e => set('course_id', e.target.value)}>
+                            <option value="">— No course —</option>
+                            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                         </select>
-                        {err('class_id')}
+                        {err('course_id')}
                     </div>
+                    <div>
+                        <label style={lbl}>Module</label>
+                        <select style={inp} value={form.module_id} onChange={e => set('module_id', e.target.value)} disabled={!form.course_id || modules.length === 0}>
+                            <option value="">— No module —</option>
+                            {modules.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
+                        </select>
+                        {!form.course_id && <span style={{ fontSize: '.72rem', color: '#9ca3af' }}>Select a course first.</span>}
+                        {err('module_id')}
+                    </div>
+                </div>
+
+                {/* Due date + Status */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
                     <div>
                         <label style={lbl}>Due Date &amp; Time</label>
                         <input type="datetime-local" style={inp} value={form.due_date} onChange={e => set('due_date', e.target.value)} />
                         {err('due_date')}
                     </div>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                    <label style={lbl}>Status *</label>
-                    <select style={inp} value={form.status} onChange={e => set('status', e.target.value)}>
-                        <option value="active">Active</option>
-                        <option value="draft">Draft</option>
-                        <option value="closed">Closed</option>
-                    </select>
-                    {err('status')}
+                    <div>
+                        <label style={lbl}>Status *</label>
+                        <select style={inp} value={form.status} onChange={e => set('status', e.target.value)}>
+                            <option value="active">Active</option>
+                            <option value="draft">Draft</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        {err('status')}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -480,34 +537,34 @@ function SubmissionsPanel({ assessment, token, onClose, onAssessmentUpdated }) {
 export default function ClassAssessments() {
     const { can, token } = useAuth();
 
-    const [assessments, setAssessments] = useState([]);
-    const [meta, setMeta]               = useState({ total: 0, last_page: 1 });
-    const [classes, setClasses]         = useState([]);
-    const [loading, setLoading]         = useState(true);
+    const [assessments, setAssessments]         = useState([]);
+    const [meta, setMeta]                       = useState({ total: 0, last_page: 1 });
+    const [techsphereClasses, setTsClasses]     = useState([]);
+    const [loading, setLoading]                 = useState(true);
 
-    const [search, setSearch]           = useState('');
-    const [classFilter, setClassFilter] = useState('');
-    const [statusFilter, setStatus]     = useState('');
-    const [page, setPage]               = useState(1);
+    const [search, setSearch]                   = useState('');
+    const [classFilter, setClassFilter]         = useState('');
+    const [statusFilter, setStatus]             = useState('');
+    const [page, setPage]                       = useState(1);
 
-    const [addModal, setAddModal]       = useState(false);
-    const [editItem, setEdit]           = useState(null);
-    const [deleteItem, setDelete]       = useState(null);
-    const [deleting, setDeleting]       = useState(false);
-    const [uploadTarget, setUpload]     = useState(null);
-    const [subsTarget, setSubs]         = useState(null);
-    const [toast, setToast]             = useState(null);
+    const [addModal, setAddModal]               = useState(false);
+    const [editItem, setEdit]                   = useState(null);
+    const [deleteItem, setDelete]               = useState(null);
+    const [deleting, setDeleting]               = useState(false);
+    const [uploadTarget, setUpload]             = useState(null);
+    const [subsTarget, setSubs]                 = useState(null);
+    const [toast, setToast]                     = useState(null);
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3500);
     };
 
-    // Load class list for filter dropdowns
+    // Load techsphere classes for filter dropdowns
     useEffect(() => {
-        fetch('/api/classes', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
+        fetch('/api/techsphere-classes?per_page=200', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
             .then(r => r.json())
-            .then(d => setClasses(Array.isArray(d) ? d : (d.data || [])))
+            .then(d => setTsClasses(d.data || []))
             .catch(() => {});
     }, [token]);
 
@@ -515,7 +572,7 @@ export default function ClassAssessments() {
         setLoading(true);
         const params = new URLSearchParams({ page, per_page: 15 });
         if (search) params.set('search', search);
-        if (classFilter) params.set('class_id', classFilter);
+        if (classFilter) params.set('techsphere_class_id', classFilter);
         if (statusFilter) params.set('status', statusFilter);
 
         fetch(`/api/admin/class-assessments?${params}`, {
@@ -629,8 +686,8 @@ export default function ClassAssessments() {
                                     style={{ flex: 1, minWidth: 200 }}
                                 />
                                 <select className="db-select" value={classFilter} onChange={e => { setClassFilter(e.target.value); setPage(1); }}>
-                                    <option value="">All classes</option>
-                                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    <option value="">All Techsphere Classes</option>
+                                    {techsphereClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                                 <select className="db-select" value={statusFilter} onChange={e => { setStatus(e.target.value); setPage(1); }}>
                                     <option value="">All statuses</option>
@@ -662,7 +719,7 @@ export default function ClassAssessments() {
                                             <tr>
                                                 <th>#</th>
                                                 <th>Assessment</th>
-                                                <th>Class</th>
+                                                <th>Class / Course</th>
                                                 <th>Due Date</th>
                                                 <th>File</th>
                                                 <th>Submissions</th>
@@ -678,7 +735,12 @@ export default function ClassAssessments() {
                                                         <div style={{ fontWeight: 600, color: '#111827', fontSize: '.85rem' }}>{a.title}</div>
                                                         {a.description && <div style={{ fontSize: '.73rem', color: '#6b7280', marginTop: 2 }}>{a.description.length > 60 ? a.description.slice(0, 60) + '…' : a.description}</div>}
                                                     </td>
-                                                    <td style={{ fontSize: '.82rem', color: '#374151' }}>{a.school_class?.name || <span style={{ color: '#94a3b8' }}>All classes</span>}</td>
+                                                    <td style={{ fontSize: '.82rem', color: '#374151' }}>
+                                                        {a.techsphere_class?.name
+                                                            ? <span><i className="fas fa-laptop-code" style={{ marginRight: 5, color: '#6b7280', fontSize: '.7rem' }} />{a.techsphere_class.name}</span>
+                                                            : <span style={{ color: '#94a3b8' }}>All students</span>}
+                                                        {a.course && <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: 3 }}><i className="fas fa-book-open" style={{ marginRight: 4 }} />{a.course.title}{a.module ? ` › ${a.module.title}` : ''}</div>}
+                                                    </td>
                                                     <td style={{ fontSize: '.78rem', color: '#374151' }}>
                                                         {a.due_date ? new Date(a.due_date).toLocaleString() : <span style={{ color: '#94a3b8' }}>No deadline</span>}
                                                     </td>
@@ -740,8 +802,8 @@ export default function ClassAssessments() {
                 </div>
             </div>
 
-            {addModal && <AssessmentModal classes={classes} token={token} onClose={() => setAddModal(false)} onSave={handleSave} />}
-            {editItem && <AssessmentModal item={editItem} classes={classes} token={token} onClose={() => setEdit(null)} onSave={handleSave} />}
+            {addModal && <AssessmentModal techsphereClasses={techsphereClasses} token={token} onClose={() => setAddModal(false)} onSave={handleSave} />}
+            {editItem && <AssessmentModal item={editItem} techsphereClasses={techsphereClasses} token={token} onClose={() => setEdit(null)} onSave={handleSave} />}
             {deleteItem && <DeleteModal title={deleteItem.title} loading={deleting} onConfirm={handleDelete} onClose={() => setDelete(null)} />}
             {uploadTarget && <UploadFileModal assessment={uploadTarget} token={token} onClose={() => setUpload(null)} onSaved={handleFileSaved} />}
             {subsTarget && <SubmissionsPanel assessment={subsTarget} token={token} onClose={() => setSubs(null)} />}

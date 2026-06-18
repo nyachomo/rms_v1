@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassAssessment;
 use App\Models\ClassAssessmentSubmission;
-use App\Models\SchoolClass;
 use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,11 +11,16 @@ use Illuminate\Support\Facades\Auth;
 
 class ClassAssessmentController extends Controller
 {
+    private function withRelations()
+    {
+        return ['techsphereClass:id,name', 'course:id,title,slug', 'module:id,title'];
+    }
+
     // ─── Admin: List all assessments ────────────────────────────────────────
 
     public function adminIndex(Request $request): JsonResponse
     {
-        $query = ClassAssessment::with(['schoolClass', 'creator'])
+        $query = ClassAssessment::with($this->withRelations())
             ->withCount('submissions');
 
         if ($request->filled('search')) {
@@ -24,8 +28,12 @@ class ClassAssessmentController extends Controller
             $query->where('title', 'like', "%{$s}%");
         }
 
-        if ($request->filled('class_id')) {
-            $query->where('class_id', $request->class_id);
+        if ($request->filled('techsphere_class_id')) {
+            $query->where('techsphere_class_id', $request->techsphere_class_id);
+        }
+
+        if ($request->filled('course_id')) {
+            $query->where('course_id', $request->course_id);
         }
 
         if ($request->filled('status')) {
@@ -42,18 +50,20 @@ class ClassAssessmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'class_id'    => 'nullable|exists:school_classes,id',
-            'due_date'    => 'nullable|date',
-            'status'      => 'required|in:active,closed,draft',
+            'title'                => 'required|string|max:255',
+            'description'          => 'nullable|string',
+            'techsphere_class_id'  => 'nullable|exists:techsphere_classes,id',
+            'course_id'            => 'nullable|exists:courses,id',
+            'module_id'            => 'nullable|exists:course_modules,id',
+            'due_date'             => 'nullable|date',
+            'status'               => 'required|in:active,closed,draft',
         ]);
 
         $data['created_by'] = Auth::id();
 
         $assessment = ClassAssessment::create($data);
 
-        return response()->json(['assessment' => $assessment->load('schoolClass')], 201);
+        return response()->json(['assessment' => $assessment->load($this->withRelations())], 201);
     }
 
     // ─── Admin: Update assessment ────────────────────────────────────────────
@@ -61,23 +71,24 @@ class ClassAssessmentController extends Controller
     public function update(Request $request, ClassAssessment $assessment): JsonResponse
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'class_id'    => 'nullable|exists:school_classes,id',
-            'due_date'    => 'nullable|date',
-            'status'      => 'required|in:active,closed,draft',
+            'title'                => 'required|string|max:255',
+            'description'          => 'nullable|string',
+            'techsphere_class_id'  => 'nullable|exists:techsphere_classes,id',
+            'course_id'            => 'nullable|exists:courses,id',
+            'module_id'            => 'nullable|exists:course_modules,id',
+            'due_date'             => 'nullable|date',
+            'status'               => 'required|in:active,closed,draft',
         ]);
 
         $assessment->update($data);
 
-        return response()->json(['assessment' => $assessment->fresh()->load('schoolClass')]);
+        return response()->json(['assessment' => $assessment->fresh()->load($this->withRelations())]);
     }
 
     // ─── Admin: Delete assessment ────────────────────────────────────────────
 
     public function destroy(ClassAssessment $assessment): JsonResponse
     {
-        // Remove uploaded files from disk
         $this->deleteFile($assessment->assessment_file_path);
 
         foreach ($assessment->submissions as $sub) {
@@ -98,7 +109,6 @@ class ClassAssessmentController extends Controller
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip|max:20480',
         ]);
 
-        // Remove old file if exists
         $this->deleteFile($assessment->assessment_file_path);
 
         $file     = $request->file('file');
@@ -110,7 +120,7 @@ class ClassAssessmentController extends Controller
             'assessment_file_name' => $file->getClientOriginalName(),
         ]);
 
-        return response()->json(['assessment' => $assessment->fresh()->load('schoolClass')]);
+        return response()->json(['assessment' => $assessment->fresh()->load($this->withRelations())]);
     }
 
     // ─── Admin: Remove assessment file ──────────────────────────────────────
@@ -124,7 +134,7 @@ class ClassAssessmentController extends Controller
             'assessment_file_name' => null,
         ]);
 
-        return response()->json(['assessment' => $assessment->fresh()->load('schoolClass')]);
+        return response()->json(['assessment' => $assessment->fresh()->load($this->withRelations())]);
     }
 
     // ─── Admin: List submissions for an assessment ──────────────────────────
@@ -136,7 +146,7 @@ class ClassAssessmentController extends Controller
             ->get();
 
         return response()->json([
-            'assessment'  => $assessment->load('schoolClass'),
+            'assessment'  => $assessment->load($this->withRelations()),
             'submissions' => $submissions,
         ]);
     }
@@ -206,27 +216,34 @@ class ClassAssessmentController extends Controller
         return response()->json(['submission' => $submission->fresh()->load(['student.user', 'markedBy'])]);
     }
 
-    // ─── Student: List assessments for their class ───────────────────────────
+    // ─── Student: List assessments visible to this user ─────────────────────
 
     public function studentIndex(): JsonResponse
     {
-        $student = $this->getAuthStudent();
+        $userId = Auth::id();
 
-        $assessments = ClassAssessment::with('schoolClass')
-            ->where(function ($q) use ($student) {
-                $q->where('class_id', $student->class_id)
-                  ->orWhereNull('class_id');
+        // Get techsphere class IDs this user is enrolled in
+        $enrolledClassIds = \DB::table('techsphere_class_user')
+            ->where('user_id', $userId)
+            ->pluck('techsphere_class_id');
+
+        $assessments = ClassAssessment::with($this->withRelations())
+            ->where(function ($q) use ($enrolledClassIds) {
+                // Assessments assigned to one of the user's classes, or open to all (no class)
+                $q->whereIn('techsphere_class_id', $enrolledClassIds)
+                  ->orWhereNull('techsphere_class_id');
             })
             ->whereIn('status', ['active', 'closed'])
             ->orderByDesc('created_at')
             ->get();
 
-        // Attach this student's submission info to each assessment
+        // Attach this student's submission info (look up student record)
+        $student = Student::where('user_id', $userId)->first();
+
         $assessments->each(function ($assessment) use ($student) {
-            $submission = $assessment->submissions()
-                ->where('student_id', $student->id)
-                ->first();
-            $assessment->my_submission = $submission;
+            $assessment->my_submission = $student
+                ? $assessment->submissions()->where('student_id', $student->id)->first()
+                : null;
         });
 
         return response()->json(['assessments' => $assessments]);
@@ -236,8 +253,7 @@ class ClassAssessmentController extends Controller
 
     public function studentDownload(ClassAssessment $assessment)
     {
-        $student = $this->getAuthStudent();
-        $this->authorizeStudentAccess($assessment, $student);
+        $this->authorizeStudentUserAccess($assessment);
 
         abort_if(!$assessment->assessment_file_path, 404, 'No file available for this assessment.');
 
@@ -251,8 +267,7 @@ class ClassAssessmentController extends Controller
 
     public function studentSubmit(Request $request, ClassAssessment $assessment): JsonResponse
     {
-        $student = $this->getAuthStudent();
-        $this->authorizeStudentAccess($assessment, $student);
+        $this->authorizeStudentUserAccess($assessment);
 
         abort_if($assessment->status === 'closed', 403, 'This assessment is closed for submissions.');
 
@@ -260,15 +275,15 @@ class ClassAssessmentController extends Controller
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip|max:20480',
         ]);
 
+        $student = Student::where('user_id', Auth::id())->firstOrFail();
+
         $submission = ClassAssessmentSubmission::firstOrNew([
             'assessment_id' => $assessment->id,
             'student_id'    => $student->id,
         ]);
 
-        // Remove old submission file if re-submitting
         if ($submission->exists) {
             $this->deleteFile($submission->submission_file_path);
-            // Reset grading when re-submitting
             $submission->fill([
                 'grade'            => null,
                 'feedback'         => null,
@@ -298,8 +313,9 @@ class ClassAssessmentController extends Controller
 
     public function studentDeleteSubmission(ClassAssessment $assessment): JsonResponse
     {
-        $student = $this->getAuthStudent();
-        $this->authorizeStudentAccess($assessment, $student);
+        $this->authorizeStudentUserAccess($assessment);
+
+        $student = Student::where('user_id', Auth::id())->firstOrFail();
 
         $submission = ClassAssessmentSubmission::where('assessment_id', $assessment->id)
             ->where('student_id', $student->id)
@@ -316,7 +332,7 @@ class ClassAssessmentController extends Controller
 
     public function studentDownloadMarked(ClassAssessment $assessment)
     {
-        $student = $this->getAuthStudent();
+        $student = Student::where('user_id', Auth::id())->firstOrFail();
 
         $submission = ClassAssessmentSubmission::where('assessment_id', $assessment->id)
             ->where('student_id', $student->id)
@@ -332,17 +348,16 @@ class ClassAssessmentController extends Controller
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    private function getAuthStudent(): Student
+    private function authorizeStudentUserAccess(ClassAssessment $assessment): void
     {
-        $student = Student::where('user_id', Auth::id())->first();
-        abort_if(!$student, 403, 'No student profile found for this account.');
-        return $student;
-    }
+        if (is_null($assessment->techsphere_class_id)) return;
 
-    private function authorizeStudentAccess(ClassAssessment $assessment, Student $student): void
-    {
-        $allowed = is_null($assessment->class_id) || $assessment->class_id === $student->class_id;
-        abort_if(!$allowed, 403, 'This assessment is not assigned to your class.');
+        $enrolled = \DB::table('techsphere_class_user')
+            ->where('user_id', Auth::id())
+            ->where('techsphere_class_id', $assessment->techsphere_class_id)
+            ->exists();
+
+        abort_if(!$enrolled, 403, 'This assessment is not assigned to your class.');
     }
 
     private function deleteFile(?string $relativePath): void
