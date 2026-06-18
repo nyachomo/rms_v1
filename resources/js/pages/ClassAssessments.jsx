@@ -648,49 +648,80 @@ export default function ClassAssessments() {
                     {!can('class_assessments', 'view') && <AccessDenied />}
                     {can('class_assessments', 'view') && (
                         <>
-                            {/* Topbar */}
+                            {/* ── Topbar ── */}
                             <div className="db-topbar">
-                                <h1 className="db-page-title">
-                                    <i className="fas fa-clipboard-list" style={{ marginRight: 10 }} />
-                                    Class Assessments
-                                </h1>
+                                <div>
+                                    <h1 className="db-page-title"><i className="fas fa-clipboard-list"></i> Class Assessments</h1>
+                                    <p className="db-page-sub">Create and manage assessments, upload files, and review student submissions</p>
+                                </div>
                                 {can('class_assessments', 'create') && (
-                                    <button className="db-btn-primary" onClick={() => setAddModal(true)}>
-                                        <i className="fas fa-plus" /> New Assessment
+                                    <button
+                                        onClick={() => setAddModal(true)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg,#fe730c,#f97316)', border: 'none', borderRadius: 10, padding: '9px 18px', color: '#fff', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(254,115,12,.35)', whiteSpace: 'nowrap', flexShrink: 0 }}
+                                        onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
+                                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                    >
+                                        <i className="fas fa-plus" style={{ fontSize: '.78rem' }}></i> New Assessment
                                     </button>
                                 )}
                             </div>
 
-                            {/* Stats */}
-                            <div style={{ display: 'flex', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
-                                {[
-                                    { label: 'Total', value: meta.total, icon: 'fa-clipboard-list', bg: '#eff6ff', color: '#1d4ed8' },
-                                ].map(s => (
-                                    <div key={s.label} style={{ background: s.bg, borderRadius: 14, padding: '14px 20px', minWidth: 140, display: 'flex', alignItems: 'center', gap: 14 }}>
-                                        <i className={`fas ${s.icon}`} style={{ fontSize: '1.6rem', color: s.color }} />
-                                        <div>
-                                            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.color, fontFamily: 'Poppins,sans-serif' }}>{s.value}</div>
-                                            <div style={{ fontSize: '.72rem', color: '#6b7280', fontFamily: 'Poppins,sans-serif' }}>{s.label}</div>
-                                        </div>
+                            {/* ── Stat cards ── */}
+                            {(() => {
+                                const active = assessments.filter(a => a.status === 'active').length;
+                                const closed = assessments.filter(a => a.status === 'closed').length;
+                                const draft  = assessments.filter(a => a.status === 'draft').length;
+                                const cards = [
+                                    { label: 'Total Assessments', value: meta.total ?? 0,  icon: 'fas fa-clipboard-list', gradient: 'linear-gradient(135deg,#081f4e,#1e3a8a)', color: '#081f4e' },
+                                    { label: 'Active',            value: active,            icon: 'fas fa-check-circle',   gradient: 'linear-gradient(135deg,#10b981,#059669)', color: '#059669' },
+                                    { label: 'Closed',            value: closed,            icon: 'fas fa-lock',           gradient: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#dc2626' },
+                                    { label: 'Draft',             value: draft,             icon: 'fas fa-pencil-alt',     gradient: 'linear-gradient(135deg,#64748b,#475569)', color: '#475569' },
+                                ];
+                                return (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16, marginBottom: 24 }}>
+                                        {cards.map(c => (
+                                            <div key={c.label} style={{ background: '#fff', borderRadius: 16, padding: '20px 20px', boxShadow: '0 2px 12px rgba(0,0,0,.06)', border: '1px solid #eef0f6', display: 'flex', alignItems: 'center', gap: 16, overflow: 'hidden', position: 'relative' }}>
+                                                <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: c.gradient, borderRadius: '16px 0 0 16px' }}></div>
+                                                <div style={{ width: 48, height: 48, borderRadius: 13, background: c.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 6px 16px ${c.color}30` }}>
+                                                    <i className={c.icon} style={{ color: '#fff', fontSize: '1.05rem' }}></i>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '1.7rem', fontWeight: 900, color: c.color, lineHeight: 1, fontFamily: 'Poppins,sans-serif' }}>{c.value}</div>
+                                                    <div style={{ fontSize: '.72rem', color: '#94a3b8', fontFamily: 'Poppins,sans-serif', fontWeight: 600, marginTop: 2 }}>{c.label}</div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })()}
 
-                            {/* Filters */}
-                            <div className="db-controls" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
-                                <input
-                                    className="db-search"
-                                    placeholder="Search assessments…"
-                                    value={search}
-                                    onChange={e => { setSearch(e.target.value); setPage(1); }}
-                                    style={{ flex: 1, minWidth: 200 }}
-                                />
-                                <select className="db-select" value={classFilter} onChange={e => { setClassFilter(e.target.value); setPage(1); }}>
+                            {/* ── Filters bar ── */}
+                            <div style={{ background: '#fff', borderRadius: 16, padding: '14px 20px', boxShadow: '0 2px 10px rgba(0,0,0,.05)', border: '1px solid #eef0f6', marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div style={{ flex: '1 1 220px', position: 'relative' }}>
+                                    <i className="fas fa-search" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1', fontSize: '.82rem' }}></i>
+                                    <input
+                                        value={search}
+                                        onChange={e => { setSearch(e.target.value); setPage(1); }}
+                                        placeholder="Search assessments…"
+                                        style={{ width: '100%', paddingLeft: 38, paddingRight: 14, paddingTop: 9, paddingBottom: 9, border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', outline: 'none', color: '#374151', background: '#f8faff', boxSizing: 'border-box' }}
+                                        onFocus={e => e.target.style.borderColor = '#fe730c'}
+                                        onBlur={e => e.target.style.borderColor = '#e8eaf0'}
+                                    />
+                                </div>
+                                <select
+                                    value={classFilter}
+                                    onChange={e => { setClassFilter(e.target.value); setPage(1); }}
+                                    style={{ padding: '9px 12px', border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', color: '#374151', background: '#f8faff', outline: 'none', minWidth: 180 }}
+                                >
                                     <option value="">All Techsphere Classes</option>
                                     {techsphereClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
-                                <select className="db-select" value={statusFilter} onChange={e => { setStatus(e.target.value); setPage(1); }}>
-                                    <option value="">All statuses</option>
+                                <select
+                                    value={statusFilter}
+                                    onChange={e => { setStatus(e.target.value); setPage(1); }}
+                                    style={{ padding: '9px 12px', border: '1.5px solid #e8eaf0', borderRadius: 10, fontFamily: 'Poppins,sans-serif', fontSize: '.84rem', color: '#374151', background: '#f8faff', outline: 'none', minWidth: 140 }}
+                                >
+                                    <option value="">All Statuses</option>
                                     <option value="active">Active</option>
                                     <option value="closed">Closed</option>
                                     <option value="draft">Draft</option>
