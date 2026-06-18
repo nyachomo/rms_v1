@@ -33,6 +33,7 @@ use App\Http\Controllers\TechsphereClassController;
 use App\Http\Controllers\AdmissionLetterController;
 use App\Http\Controllers\FeePaymentController;
 use App\Http\Controllers\RegistrationFeeController;
+use App\Http\Controllers\ClassAssessmentController;
 
 // Public routes
 Route::post('/contact',           [ContactController::class, 'send']);
@@ -309,4 +310,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings',             [SettingController::class, 'show']);
     Route::post('/settings',            [SettingController::class, 'update']);
     Route::delete('/settings/logo',     [SettingController::class, 'removeLogo']);
+
+    // ── Class Assessments (Admin) ────────────────────────────────────────────
+    Route::get('/admin/class-assessments',                                                                              [ClassAssessmentController::class, 'adminIndex']);
+    Route::post('/admin/class-assessments',                                                                             [ClassAssessmentController::class, 'store']);
+    Route::put('/admin/class-assessments/{assessment}',                                                                 [ClassAssessmentController::class, 'update']);
+    Route::delete('/admin/class-assessments/{assessment}',                                                              [ClassAssessmentController::class, 'destroy']);
+    Route::post('/admin/class-assessments/{assessment}/upload-file',                                                    [ClassAssessmentController::class, 'uploadFile']);
+    Route::delete('/admin/class-assessments/{assessment}/file',                                                         [ClassAssessmentController::class, 'removeFile']);
+    Route::get('/admin/class-assessments/{assessment}/submissions',                                                     [ClassAssessmentController::class, 'adminSubmissions']);
+    Route::get('/admin/class-assessments/{assessment}/submissions/{submission}/download',                               [ClassAssessmentController::class, 'downloadSubmission']);
+    Route::post('/admin/class-assessments/{assessment}/submissions/{submission}/mark',                                  [ClassAssessmentController::class, 'markSubmission']);
+    Route::delete('/admin/class-assessments/{assessment}/submissions/{submission}/marked-file',                         [ClassAssessmentController::class, 'removeMarkedFile']);
+
+    // ── Class Assessments (Student) ──────────────────────────────────────────
+    Route::get('/student/class-assessments',                                                                            [ClassAssessmentController::class, 'studentIndex']);
+    Route::get('/student/class-assessments/{assessment}/download',                                                      [ClassAssessmentController::class, 'studentDownload']);
+    Route::post('/student/class-assessments/{assessment}/submit',                                                       [ClassAssessmentController::class, 'studentSubmit']);
+    Route::delete('/student/class-assessments/{assessment}/submission',                                                 [ClassAssessmentController::class, 'studentDeleteSubmission']);
+    Route::get('/student/class-assessments/{assessment}/download-marked',                                               [ClassAssessmentController::class, 'studentDownloadMarked']);
 });

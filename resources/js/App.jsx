@@ -85,6 +85,8 @@ import AdminFeeManagement from './pages/AdminFeeManagement';
 import AdminRegistrationFees from './pages/AdminRegistrationFees';
 import StudentMyFees from './pages/StudentMyFees';
 import StudentRegistrationFee from './pages/StudentRegistrationFee';
+import ClassAssessments from './pages/ClassAssessments';
+import StudentAssessments from './pages/StudentAssessments';
 
 import '../css/app.css';
 
@@ -116,6 +118,7 @@ const DASHBOARD_PAGES = [
     { perm: ['users',             'view'], to: '/dashboard/users' },
     { perm: ['homepage',          'view'], to: '/dashboard/homepage' },
     { perm: ['settings',          'view'], to: '/dashboard/settings' },
+    { perm: ['class_assessments', 'view'], to: '/dashboard/class-assessments' },
     { perm: ['learning',          'view'], to: '/dashboard/learning' },
 ];
 
@@ -162,6 +165,7 @@ function App() {
                         <Route path="admission-letters"  element={<AdminAdmissionLetters />} />
                         <Route path="fee-management"       element={<AdminFeeManagement />} />
                         <Route path="registration-fees"  element={<AdminRegistrationFees />} />
+                        <Route path="class-assessments"  element={<ClassAssessments />} />
                         <Route path="profile"        element={<Profile />} />
                         <Route path="schools"        element={<Schools />} />
                         <Route path="school-categories" element={<SchoolCategories />} />
@@ -180,6 +184,7 @@ function App() {
                             <Route path="code-practice/r"        element={<CodePractice initialMode="r" />} />
                             <Route path="my-fees"            element={<StudentMyFees />} />
                             <Route path="registration-fee"   element={<StudentRegistrationFee />} />
+                            <Route path="assessments"        element={<StudentAssessments />} />
                             <Route path="admission-letter"   element={<StudentAdmissionLetter />} />
                             <Route path="profile"            element={<LearnerProfile />} />
                             <Route path=":courseSlug"        element={<CourseLearner />} />

@@ -46,6 +46,8 @@ class RolePermissionController extends Controller
         'fee_management'      => 'Fee Management',
         // Registration Fees
         'registration_fees'   => 'Registration Fees',
+        // Class Assessments
+        'class_assessments'   => 'Class Assessments',
     ];
 
     /** Per-module allowed actions — mirrors what the UI actually supports */
@@ -85,6 +87,8 @@ class RolePermissionController extends Controller
         'fee_management'    => ['view', 'create', 'update', 'delete', 'download'],
         // Registration Fees
         'registration_fees' => ['view', 'create', 'update', 'delete', 'download'],
+        // Class Assessments
+        'class_assessments' => ['view', 'create', 'update', 'delete', 'grade'],
     ];
 
     /**
