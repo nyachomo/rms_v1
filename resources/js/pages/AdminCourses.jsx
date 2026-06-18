@@ -724,14 +724,12 @@ export default function AdminCourses() {
                     <div className="db-table-wrap" style={{ boxShadow: '0 4px 24px rgba(8,31,78,.07)', borderRadius: 16, border: '1px solid #e8eaf0' }}>
                         <table className="db-table" style={{ minWidth: 'unset', width: '100%' }}>
                             <thead>
-                                <tr style={{ background: 'linear-gradient(135deg,#f7f9fc,#eef2f7)' }}>
-                                    <th style={{ width: 36 }}>#</th>
-                                    <th style={{ minWidth: 200 }}>Course</th>
-                                    <th style={{ minWidth: 130 }}>Category / Level</th>
-                                    <th style={{ minWidth: 110 }}>Duration / Price</th>
-                                    <th style={{ minWidth: 100 }}>Rating / Students</th>
-                                    <th style={{ minWidth: 90 }}>Status</th>
-                                    <th style={{ minWidth: 100 }}>Actions</th>
+                                <tr style={{ background: 'linear-gradient(135deg,#081f4e 0%,#1e3a8a 100%)' }}>
+                                    {['#', 'Course', 'Category / Level', 'Duration / Price', 'Rating / Students', 'Status', 'Actions'].map(h => (
+                                        <th key={h} style={{ padding: '13px 14px', textAlign: 'left', color: 'rgba(255,255,255,.8)', fontSize: '.68rem', fontFamily: 'Poppins,sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', whiteSpace: 'nowrap' }}>
+                                            {h}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody>
@@ -758,7 +756,7 @@ export default function AdminCourses() {
                                             {/* Course */}
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <div style={{ width: 38, height: 38, borderRadius: 10, background: grad, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 8px rgba(0,0,0,.14)' }}>
+                                                    <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#081f4e,#1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 3px 8px rgba(8,31,78,.25)' }}>
                                                         <i className={c.icon || 'fas fa-book'} style={{ color: '#fff', fontSize: '.82rem' }}></i>
                                                     </div>
                                                     <div style={{ minWidth: 0 }}>
