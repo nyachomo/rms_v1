@@ -13,7 +13,7 @@ function Toast({ toast }) {
     );
 }
 
-/* ── Status badge ────────────────────────────────────────────────────────── */
+/* ── Status configs ──────────────────────────────────────────────────────── */
 const ASSESS_STATUS = {
     active: { bg: '#d1fae5', color: '#065f46', label: 'Active' },
     closed: { bg: '#fee2e2', color: '#991b1b', label: 'Closed' },
@@ -114,17 +114,18 @@ function SubmitModal({ assessment, token, onClose, onSaved }) {
     );
 }
 
-/* ── Assessment detail card ──────────────────────────────────────────────── */
-function AssessmentCard({ assessment, token, onUpdated }) {
+/* ── Assessment table row ────────────────────────────────────────────────── */
+function AssessmentRow({ assessment, token, onUpdated }) {
     const [submitModal, setSubmit]  = useState(false);
     const [toast, setToast]         = useState(null);
+    const [expanded, setExpanded]   = useState(false);
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3500);
     };
 
-    const sub = assessment.my_submission;
+    const sub   = assessment.my_submission;
     const subSt = sub ? (SUB_STATUS[sub.status] || SUB_STATUS.pending) : SUB_STATUS.pending;
     const asSt  = ASSESS_STATUS[assessment.status] || ASSESS_STATUS.active;
 
@@ -178,100 +179,116 @@ function AssessmentCard({ assessment, token, onUpdated }) {
     const isPastDue = assessment.due_date && new Date(assessment.due_date) < new Date();
     const canSubmit = assessment.status === 'active' && !isPastDue;
 
+    const tdStyle = {
+        padding: '12px 14px',
+        borderBottom: '1px solid #f1f5f9',
+        verticalAlign: 'middle',
+        fontFamily: 'Poppins,sans-serif',
+        fontSize: '.8rem',
+        color: '#374151',
+    };
+
     return (
         <>
             <Toast toast={toast} />
-            <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #f1f5f9', boxShadow: '0 2px 12px rgba(0,0,0,.06)', overflow: 'hidden', fontFamily: 'Poppins,sans-serif' }}>
-                {/* Card header */}
-                <div style={{ padding: '18px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                            <h3 style={{ margin: 0, fontSize: '.95rem', fontWeight: 700, color: '#111827' }}>{assessment.title}</h3>
-                            <span style={{ background: asSt.bg, color: asSt.color, borderRadius: 20, padding: '2px 9px', fontSize: '.68rem', fontWeight: 700 }}>{asSt.label}</span>
+            <tr style={{ background: expanded ? '#f8fafc' : '#fff', transition: 'background .15s' }}
+                onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = '#fafafa'; }}
+                onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = '#fff'; }}>
+
+                {/* Title + class */}
+                <td style={{ ...tdStyle, maxWidth: 220 }}>
+                    <div style={{ fontWeight: 700, color: '#111827', fontSize: '.83rem', marginBottom: 2 }}>{assessment.title}</div>
+                    {assessment.school_class && (
+                        <div style={{ fontSize: '.72rem', color: '#6b7280' }}>
+                            <i className="fas fa-chalkboard" style={{ marginRight: 4 }} />{assessment.school_class.name}
                         </div>
-                        {assessment.school_class && (
-                            <div style={{ marginTop: 5, fontSize: '.76rem', color: '#6b7280' }}>
-                                <i className="fas fa-chalkboard" style={{ marginRight: 5 }} />{assessment.school_class.name}
-                            </div>
-                        )}
-                        {assessment.description && (
-                            <p style={{ margin: '8px 0 0', fontSize: '.8rem', color: '#374151', lineHeight: 1.5 }}>{assessment.description}</p>
-                        )}
-                    </div>
-                    <span style={{ background: subSt.bg, color: subSt.color, borderRadius: 20, padding: '4px 12px', fontSize: '.72rem', fontWeight: 700, flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <i className={`fas ${subSt.icon}`} />{subSt.label}
+                    )}
+                    {assessment.description && (
+                        <div style={{ fontSize: '.72rem', color: '#9ca3af', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+                            {assessment.description}
+                        </div>
+                    )}
+                </td>
+
+                {/* Status badge */}
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <span style={{ background: asSt.bg, color: asSt.color, borderRadius: 20, padding: '3px 10px', fontSize: '.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {asSt.label}
                     </span>
-                </div>
+                </td>
 
-                {/* Card body */}
-                <div style={{ padding: '16px 22px' }}>
-                    {/* Due date */}
-                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 14 }}>
-                        {assessment.due_date && (
-                            <div style={{ fontSize: '.78rem', color: isPastDue ? '#dc2626' : '#374151', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <i className={`fas ${isPastDue ? 'fa-exclamation-circle' : 'fa-calendar-alt'}`} />
-                                {isPastDue ? 'Overdue: ' : 'Due: '}
-                                <strong>{new Date(assessment.due_date).toLocaleString()}</strong>
-                            </div>
-                        )}
-                    </div>
+                {/* Due date */}
+                <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                    {assessment.due_date ? (
+                        <span style={{ color: isPastDue ? '#dc2626' : '#374151', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <i className={`fas ${isPastDue ? 'fa-exclamation-circle' : 'fa-calendar-alt'}`} style={{ fontSize: '.72rem' }} />
+                            {new Date(assessment.due_date).toLocaleDateString()}
+                            <span style={{ display: 'block', fontSize: '.68rem', color: isPastDue ? '#dc2626' : '#9ca3af' }}>
+                                {new Date(assessment.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </span>
+                    ) : <span style={{ color: '#d1d5db' }}>—</span>}
+                </td>
 
-                    {/* Grading info */}
-                    {sub?.status === 'graded' && (
-                        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
-                            <div style={{ fontSize: '.82rem', fontWeight: 700, color: '#065f46', marginBottom: 4 }}>
-                                <i className="fas fa-star" style={{ marginRight: 6, color: '#f59e0b' }} />Assessment Graded
-                            </div>
-                            {sub.grade && <div style={{ fontSize: '.8rem', color: '#374151' }}><strong>Grade:</strong> {sub.grade}</div>}
-                            {sub.feedback && <div style={{ fontSize: '.8rem', color: '#374151', marginTop: 4 }}><strong>Feedback:</strong> {sub.feedback}</div>}
-                        </div>
-                    )}
-
-                    {/* Action buttons */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {/* Download assessment file */}
-                        {assessment.assessment_file_path && (
-                            <button onClick={downloadAssessment} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 9, border: '1.5px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 600 }}>
-                                <i className="fas fa-download" />Download Assessment
-                            </button>
-                        )}
-
-                        {/* Submit / resubmit */}
-                        {canSubmit && (
-                            <button onClick={() => setSubmit(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 9, border: 'none', background: 'var(--navy,#081f4e)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 700 }}>
-                                <i className="fas fa-paper-plane" />{sub?.submission_file_path ? 'Re-submit' : 'Submit Work'}
-                            </button>
-                        )}
-
-                        {/* Download marked file */}
-                        {sub?.marked_file_path && (
-                            <button onClick={downloadMarked} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 9, border: '1.5px solid #10b981', background: '#ecfdf5', color: '#065f46', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 600 }}>
-                                <i className="fas fa-file-download" />Download Marked Work
-                            </button>
-                        )}
-
-                        {/* Remove submission (only if active and not graded) */}
-                        {sub?.submission_file_path && canSubmit && sub.status !== 'graded' && (
-                            <button onClick={removeSubmission} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 9, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.78rem', fontWeight: 600 }}>
-                                <i className="fas fa-times" />Remove Submission
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Submission info */}
+                {/* Submission status */}
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <span style={{ background: subSt.bg, color: subSt.color, borderRadius: 20, padding: '3px 10px', fontSize: '.68rem', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <i className={`fas ${subSt.icon}`} style={{ fontSize: '.65rem' }} />{subSt.label}
+                    </span>
                     {sub?.submission_file_name && (
-                        <div style={{ marginTop: 10, fontSize: '.73rem', color: '#6b7280' }}>
-                            <i className="fas fa-file" style={{ marginRight: 5 }} />
-                            Submitted: <strong>{sub.submission_file_name}</strong>
-                            {sub.submitted_at && <span style={{ marginLeft: 8 }}>on {new Date(sub.submitted_at).toLocaleString()}</span>}
+                        <div style={{ fontSize: '.67rem', color: '#9ca3af', marginTop: 3 }}>
+                            <i className="fas fa-file" style={{ marginRight: 3 }} />{sub.submission_file_name}
                         </div>
                     )}
+                </td>
 
-                    {!assessment.assessment_file_path && !canSubmit && !sub && (
-                        <p style={{ margin: 0, fontSize: '.78rem', color: '#94a3b8', fontStyle: 'italic' }}>No file uploaded for this assessment yet.</p>
+                {/* Grade */}
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    {sub?.status === 'graded' ? (
+                        <div>
+                            <span style={{ fontWeight: 700, color: '#065f46', fontSize: '.85rem' }}>{sub.grade || '—'}</span>
+                            {sub.feedback && (
+                                <div style={{ fontSize: '.67rem', color: '#6b7280', marginTop: 2, maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                     title={sub.feedback}>
+                                    {sub.feedback}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <span style={{ color: '#d1d5db', fontSize: '.8rem' }}>—</span>
                     )}
-                </div>
-            </div>
+                </td>
+
+                {/* Actions */}
+                <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {assessment.assessment_file_path && (
+                            <button onClick={downloadAssessment} title="Download Assessment"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1.5px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
+                                <i className="fas fa-download" />Download
+                            </button>
+                        )}
+                        {canSubmit && (
+                            <button onClick={() => setSubmit(true)} title={sub?.submission_file_path ? 'Re-submit' : 'Submit Work'}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: 'none', background: 'var(--navy,#081f4e)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 700 }}>
+                                <i className="fas fa-paper-plane" />{sub?.submission_file_path ? 'Re-submit' : 'Submit'}
+                            </button>
+                        )}
+                        {sub?.marked_file_path && (
+                            <button onClick={downloadMarked} title="Download Marked Work"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1.5px solid #10b981', background: '#ecfdf5', color: '#065f46', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
+                                <i className="fas fa-file-download" />Marked Work
+                            </button>
+                        )}
+                        {sub?.submission_file_path && canSubmit && sub.status !== 'graded' && (
+                            <button onClick={removeSubmission} title="Remove Submission"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
+                                <i className="fas fa-times" />Remove
+                            </button>
+                        )}
+                    </div>
+                </td>
+            </tr>
 
             {submitModal && (
                 <SubmitModal
@@ -282,6 +299,45 @@ function AssessmentCard({ assessment, token, onUpdated }) {
                 />
             )}
         </>
+    );
+}
+
+/* ── Assessment table ────────────────────────────────────────────────────── */
+function AssessmentTable({ assessments, token, onUpdated }) {
+    const thStyle = {
+        padding: '10px 14px',
+        textAlign: 'left',
+        fontSize: '.72rem',
+        fontWeight: 700,
+        color: '#6b7280',
+        textTransform: 'uppercase',
+        letterSpacing: '.4px',
+        borderBottom: '2px solid #e5e7eb',
+        background: '#f8fafc',
+        fontFamily: 'Poppins,sans-serif',
+        whiteSpace: 'nowrap',
+    };
+
+    return (
+        <div style={{ overflowX: 'auto', borderRadius: 12, border: '1.5px solid #e5e7eb', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+                <thead>
+                    <tr>
+                        <th style={thStyle}>Assessment</th>
+                        <th style={{ ...thStyle, textAlign: 'center' }}>Status</th>
+                        <th style={thStyle}>Due Date</th>
+                        <th style={{ ...thStyle, textAlign: 'center' }}>Submission</th>
+                        <th style={{ ...thStyle, textAlign: 'center' }}>Grade</th>
+                        <th style={thStyle}>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {assessments.map(a => (
+                        <AssessmentRow key={a.id} assessment={a} token={token} onUpdated={onUpdated} />
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 }
 
@@ -319,7 +375,7 @@ export default function StudentAssessments() {
     const closed = assessments.filter(a => a.status !== 'active');
 
     return (
-        <div style={{ fontFamily: 'Poppins,sans-serif', maxWidth: 860, margin: '0 auto', padding: '0 4px' }}>
+        <div style={{ fontFamily: 'Poppins,sans-serif', maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
             <Toast toast={toast} />
 
             <div style={{ marginBottom: 28 }}>
@@ -346,28 +402,20 @@ export default function StudentAssessments() {
             ) : (
                 <>
                     {active.length > 0 && (
-                        <section style={{ marginBottom: 32 }}>
-                            <h3 style={{ margin: '0 0 14px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <section style={{ marginBottom: 36 }}>
+                            <h3 style={{ margin: '0 0 12px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <i className="fas fa-circle" style={{ fontSize: '.5rem', color: '#10b981' }} />Active Assessments
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                {active.map(a => (
-                                    <AssessmentCard key={a.id} assessment={a} token={token} onUpdated={handleUpdated} />
-                                ))}
-                            </div>
+                            <AssessmentTable assessments={active} token={token} onUpdated={handleUpdated} />
                         </section>
                     )}
 
                     {closed.length > 0 && (
                         <section>
-                            <h3 style={{ margin: '0 0 14px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <h3 style={{ margin: '0 0 12px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <i className="fas fa-circle" style={{ fontSize: '.5rem', color: '#94a3b8' }} />Closed / Past Assessments
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                {closed.map(a => (
-                                    <AssessmentCard key={a.id} assessment={a} token={token} onUpdated={handleUpdated} />
-                                ))}
-                            </div>
+                            <AssessmentTable assessments={closed} token={token} onUpdated={handleUpdated} />
                         </section>
                     )}
                 </>
