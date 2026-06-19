@@ -472,20 +472,17 @@ export default function StudentAssessments() {
                                                 </td>
                                             )}
 
-                                            {/* Assessment row content */}
+                                            {/* Assessment row content (renders Module Avg then Actions internally) */}
                                             <AssessmentRowCells
                                                 assessment={assessment}
                                                 token={token}
                                                 onUpdated={handleUpdated}
                                                 showToast={showToast}
+                                                moduleAvg={avg}
+                                                isFirst={isFirst}
+                                                rowCount={rowCount}
+                                                moduleAvgTd={moduleAvgTd}
                                             />
-
-                                            {/* Module avg — only first row */}
-                                            {isFirst && (
-                                                <td rowSpan={rowCount} style={moduleAvgTd(avg)}>
-                                                    {avg ?? <span style={{ color: '#d1d5db' }}>—</span>}
-                                                </td>
-                                            )}
                                         </tr>
                                     );
                                 });
@@ -499,7 +496,7 @@ export default function StudentAssessments() {
 }
 
 /* ── Inline row cells (used inside the main tr, alongside rowspan cells) ── */
-function AssessmentRowCells({ assessment, token, onUpdated, showToast }) {
+function AssessmentRowCells({ assessment, token, onUpdated, showToast, moduleAvg, isFirst, rowCount, moduleAvgTd }) {
     const [submitModal, setSubmit] = useState(false);
 
     const sub      = assessment.my_submission;
@@ -595,6 +592,13 @@ function AssessmentRowCells({ assessment, token, onUpdated, showToast }) {
                         : <span style={{ color: '#d1d5db' }}>—</span>
                 }
             </td>
+
+            {/* Module Avg cell — rowspan, first row of module only */}
+            {isFirst && (
+                <td rowSpan={rowCount} style={moduleAvgTd(moduleAvg)}>
+                    {moduleAvg ?? <span style={{ color: '#d1d5db' }}>—</span>}
+                </td>
+            )}
 
             {/* Actions cell */}
             <td style={{ ...td, whiteSpace: 'nowrap' }}>
