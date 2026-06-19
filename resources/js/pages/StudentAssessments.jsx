@@ -408,31 +408,24 @@ export default function StudentAssessments() {
             <Toast toast={toast} />
 
             {/* Page header */}
-            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
-                        <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: '#e53e3e' }} />
-                        My Assessments
-                    </h2>
-                    <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
-                        Download your assignments, submit your work, and view your graded results here.
-                    </p>
-                </div>
-                {cumulative && (
-                    <div style={{ background: '#081f4e', color: '#fff', borderRadius: 10, padding: '10px 20px', textAlign: 'center', flexShrink: 0 }}>
-                        <div style={{ fontSize: '.68rem', fontWeight: 600, opacity: .7, letterSpacing: '.5px', textTransform: 'uppercase' }}>Cumulative Score</div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: 2 }}>{cumulative}</div>
-                    </div>
-                )}
+            <div style={{ marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
+                    <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: '#e53e3e' }} />
+                    My Assessments
+                </h2>
+                <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
+                    Download your assignments, submit your work, and view your graded results here.
+                </p>
             </div>
 
             {/* Stats cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 28 }}>
                 {[
-                    { label: 'Total Assessments', value: totalCount,     icon: 'fa-clipboard-list', color: '#8b5cf6' },
-                    { label: 'Not Submitted',      value: notSubmitted,   icon: 'fa-clock',          color: '#64748b' },
-                    { label: 'Submitted',          value: submittedCount, icon: 'fa-paper-plane',    color: '#3b82f6' },
-                    { label: 'Graded',             value: gradedCount,    icon: 'fa-check-circle',   color: '#10b981' },
+                    { label: 'Total Assessments', value: totalCount,        icon: 'fa-clipboard-list', color: '#8b5cf6' },
+                    { label: 'Not Submitted',      value: notSubmitted,      icon: 'fa-clock',          color: '#64748b' },
+                    { label: 'Submitted',          value: submittedCount,    icon: 'fa-paper-plane',    color: '#3b82f6' },
+                    { label: 'Graded',             value: gradedCount,       icon: 'fa-check-circle',   color: '#10b981' },
+                    { label: 'Cumulative Score',   value: cumulative ?? '—', icon: 'fa-chart-line',     color: '#e53e3e' },
                 ].map(card => (
                     <div key={card.label} style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 6px rgba(0,0,0,.08)', borderLeft: `4px solid ${card.color}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
