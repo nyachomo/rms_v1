@@ -321,7 +321,7 @@ function AssessmentRow({ assessment, token, onUpdated, showToast }) {
 
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function StudentAssessments() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [toast, setToast]             = useState(null);
@@ -499,7 +499,8 @@ export default function StudentAssessments() {
     };
 
     return (
-        <div style={{ fontFamily: 'Poppins,sans-serif', maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
+        <div className="db-content" style={{ fontFamily: 'Poppins,sans-serif' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <Toast toast={toast} />
 
             {/* Page header */}
@@ -610,6 +611,7 @@ export default function StudentAssessments() {
                     </table>
                 </div>
             )}
+        </div>
         </div>
     );
 }
