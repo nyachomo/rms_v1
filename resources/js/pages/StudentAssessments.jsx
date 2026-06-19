@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 /* ── Toast ─────────────────────────────────────────────────────────────────── */
 function Toast({ toast }) {
@@ -346,6 +348,99 @@ export default function StudentAssessments() {
         setAssessments(prev => prev.map(a => a.id === updated.id ? updated : a));
     };
 
+    const downloadReport = () => {
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+
+        /* ── Header ── */
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(8, 31, 78);
+        doc.text('Students Progress Report', 14, 16);
+
+        if (cumulative) {
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(8, 31, 78);
+            doc.text(`Cumulative Score: ${cumulative}`, pageW - 14, 16, { align: 'right' });
+        }
+
+        /* ── Student info ── */
+        const firstA = assessments[0];
+        const infoLines = [
+            `Trainee: ${user?.name ?? '—'}`,
+            `Email: ${user?.email ?? '—'}`,
+            `Course: ${firstA?.course?.title ?? '—'}`,
+            `Class: ${firstA?.school_class?.name ?? '—'}`,
+        ];
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        infoLines.forEach((line, i) => doc.text(line, 14, 25 + i * 5));
+
+        /* ── Table body with rowSpan ── */
+        const bodyRows = [];
+        groups.forEach((group, gi) => {
+            const avg = moduleAverage(group.items);
+            group.items.forEach((assessment, ai) => {
+                const sub     = assessment.my_submission;
+                const score   = sub?.status === 'graded' && sub.grade ? sub.grade
+                              : sub?.status === 'submitted' ? 'Submitted' : '—';
+                const comment = sub?.status === 'graded' && sub.feedback ? sub.feedback : '—';
+
+                if (ai === 0) {
+                    bodyRows.push([
+                        { content: String(gi + 1), rowSpan: group.items.length, styles: { halign: 'center', fontStyle: 'bold', fillColor: [8, 31, 78], textColor: [255, 255, 255], valign: 'middle' } },
+                        { content: group.module?.title ?? 'General', rowSpan: group.items.length, styles: { fontStyle: 'bold', fillColor: [240, 244, 255], valign: 'middle' } },
+                        { content: assessment.title },
+                        { content: score,   styles: { halign: 'center' } },
+                        { content: comment },
+                        { content: avg ?? '—', rowSpan: group.items.length, styles: { halign: 'center', fontStyle: 'bold', fillColor: [240, 244, 255], valign: 'middle' } },
+                    ]);
+                } else {
+                    bodyRows.push([
+                        { content: assessment.title },
+                        { content: score,   styles: { halign: 'center' } },
+                        { content: comment },
+                    ]);
+                }
+            });
+        });
+
+        autoTable(doc, {
+            startY: 48,
+            head: [[
+                { content: '#',                      styles: { halign: 'center' } },
+                { content: 'Module' },
+                { content: 'Exam Name' },
+                { content: 'Score (100%)',            styles: { halign: 'center' } },
+                { content: 'Comment' },
+                { content: 'Module Average\nScore (100%)', styles: { halign: 'center' } },
+            ]],
+            body: bodyRows,
+            styles: { fontSize: 8, cellPadding: 3, font: 'helvetica', overflow: 'linebreak' },
+            headStyles: { fillColor: [8, 31, 78], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            columnStyles: {
+                0: { cellWidth: 10 },
+                1: { cellWidth: 38 },
+                2: { cellWidth: 55 },
+                3: { cellWidth: 22 },
+                4: { cellWidth: 45 },
+                5: { cellWidth: 22 },
+            },
+            alternateRowStyles: { fillColor: [250, 250, 255] },
+            didDrawPage: ({ pageNumber }) => {
+                const total = doc.internal.getNumberOfPages();
+                doc.setFontSize(7);
+                doc.setTextColor(150);
+                doc.text(`Page ${pageNumber} of ${total}`, pageW - 14, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+            },
+        });
+
+        const safeName = (user?.name ?? 'student').replace(/\s+/g, '_').toLowerCase();
+        doc.save(`progress_report_${safeName}.pdf`);
+    };
+
     const cumulative   = cumulativeAverage(assessments);
     const groups       = groupByModule(assessments);
 
@@ -408,14 +503,22 @@ export default function StudentAssessments() {
             <Toast toast={toast} />
 
             {/* Page header */}
-            <div style={{ marginBottom: 24 }}>
-                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
-                    <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: '#e53e3e' }} />
-                    My Assessments
-                </h2>
-                <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
-                    Download your assignments, submit your work, and view your graded results here.
-                </p>
+            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                    <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
+                        <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: '#e53e3e' }} />
+                        My Assessments
+                    </h2>
+                    <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
+                        Download your assignments, submit your work, and view your graded results here.
+                    </p>
+                </div>
+                {!loading && assessments.length > 0 && (
+                    <button onClick={downloadReport}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 10, border: 'none', background: '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.82rem', fontWeight: 700, flexShrink: 0, boxShadow: '0 2px 8px rgba(8,31,78,.25)' }}>
+                        <i className="fas fa-file-pdf" />Download Report
+                    </button>
+                )}
             </div>
 
             {/* Stats cards */}
