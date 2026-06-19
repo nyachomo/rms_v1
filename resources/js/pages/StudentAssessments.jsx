@@ -346,8 +346,13 @@ export default function StudentAssessments() {
         setAssessments(prev => prev.map(a => a.id === updated.id ? updated : a));
     };
 
-    const cumulative  = cumulativeAverage(assessments);
-    const groups      = groupByModule(assessments);
+    const cumulative   = cumulativeAverage(assessments);
+    const groups       = groupByModule(assessments);
+
+    const totalCount      = assessments.length;
+    const notSubmitted    = assessments.filter(a => !a.my_submission?.submission_file_path).length;
+    const submittedCount  = assessments.filter(a => a.my_submission?.status === 'submitted').length;
+    const gradedCount     = assessments.filter(a => a.my_submission?.status === 'graded').length;
 
     /* shared styles */
     const thBase = {
@@ -419,6 +424,24 @@ export default function StudentAssessments() {
                         <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: 2 }}>{cumulative}</div>
                     </div>
                 )}
+            </div>
+
+            {/* Stats cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 28 }}>
+                {[
+                    { label: 'Total Assessments', value: totalCount,     icon: 'fa-clipboard-list', color: '#8b5cf6' },
+                    { label: 'Not Submitted',      value: notSubmitted,   icon: 'fa-clock',          color: '#64748b' },
+                    { label: 'Submitted',          value: submittedCount, icon: 'fa-paper-plane',    color: '#3b82f6' },
+                    { label: 'Graded',             value: gradedCount,    icon: 'fa-check-circle',   color: '#10b981' },
+                ].map(card => (
+                    <div key={card.label} style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 6px rgba(0,0,0,.08)', borderLeft: `4px solid ${card.color}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                            <i className={`fas ${card.icon}`} style={{ color: card.color, fontSize: '1.1rem' }} />
+                            <span style={{ color: '#666', fontSize: '.82rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>{card.label}</span>
+                        </div>
+                        <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#081f4e', fontFamily: 'Poppins,sans-serif' }}>{card.value}</div>
+                    </div>
+                ))}
             </div>
 
             {loading ? (
