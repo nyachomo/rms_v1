@@ -21,29 +21,71 @@ const ASSESS_STATUS = {
 };
 
 const SUB_STATUS = {
-    pending:   { bg: '#f1f5f9', color: '#64748b', icon: 'fa-clock', label: 'Not Submitted' },
-    submitted: { bg: '#dbeafe', color: '#1d4ed8', icon: 'fa-paper-plane', label: 'Submitted' },
+    pending:   { bg: '#f1f5f9', color: '#64748b', icon: 'fa-clock',        label: 'Not Submitted' },
+    submitted: { bg: '#dbeafe', color: '#1d4ed8', icon: 'fa-paper-plane',  label: 'Submitted' },
     graded:    { bg: '#d1fae5', color: '#065f46', icon: 'fa-check-circle', label: 'Graded' },
 };
 
-/* ── Submit / re-submit modal ────────────────────────────────────────────── */
-function SubmitModal({ assessment, token, onClose, onSaved }) {
-    const [file, setFile]       = useState(null);
-    const [dragOver, setDrag]   = useState(false);
-    const [uploading, setUpl]   = useState(false);
-    const [error, setError]     = useState('');
-    const inputRef              = useRef();
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+function parseScorePercent(grade) {
+    if (!grade) return null;
+    const g = String(grade).trim();
+    if (g.includes('/')) {
+        const [n, d] = g.split('/').map(Number);
+        if (d > 0) return (n / d) * 100;
+    }
+    const n = parseFloat(g);
+    return isNaN(n) ? null : n;
+}
 
+function moduleAverage(assessments) {
+    const graded = assessments.filter(a => a.my_submission?.status === 'graded' && a.my_submission?.grade);
+    if (!graded.length) return null;
+    const scores = graded.map(a => parseScorePercent(a.my_submission.grade)).filter(s => s !== null);
+    if (!scores.length) return null;
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) + '%';
+}
+
+function cumulativeAverage(assessments) {
+    const graded = assessments.filter(a => a.my_submission?.status === 'graded' && a.my_submission?.grade);
+    if (!graded.length) return null;
+    const scores = graded.map(a => parseScorePercent(a.my_submission.grade)).filter(s => s !== null);
+    if (!scores.length) return null;
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) + '%';
+}
+
+function groupByModule(assessments) {
+    const map = new Map();
+    const unassigned = [];
+    assessments.forEach(a => {
+        if (a.module?.id) {
+            if (!map.has(a.module.id)) map.set(a.module.id, { module: a.module, items: [] });
+            map.get(a.module.id).items.push(a);
+        } else {
+            unassigned.push(a);
+        }
+    });
+    const groups = Array.from(map.values());
+    if (unassigned.length) groups.push({ module: null, items: unassigned });
+    return groups;
+}
+
+/* ── Submit modal ────────────────────────────────────────────────────────── */
+function SubmitModal({ assessment, token, onClose, onSaved }) {
+    const [file, setFile]     = useState(null);
+    const [dragOver, setDrag] = useState(false);
+    const [uploading, setUpl] = useState(false);
+    const [error, setError]   = useState('');
+    const inputRef            = useRef();
     const isResubmit = !!assessment.my_submission?.submission_file_path;
 
     const pick = f => {
         if (!f) return;
         const allowed = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','zip'];
         const ext = f.name.split('.').pop().toLowerCase();
-        if (!allowed.includes(ext)) { setError('Unsupported file type. Please use PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, or ZIP.'); return; }
+        if (!allowed.includes(ext)) { setError('Unsupported file type.'); return; }
         if (f.size > 20 * 1024 * 1024) { setError('File must be under 20 MB.'); return; }
-        setError('');
-        setFile(f);
+        setError(''); setFile(f);
     };
 
     const handleSubmit = async () => {
@@ -67,12 +109,11 @@ function SubmitModal({ assessment, token, onClose, onSaved }) {
             <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 480, fontFamily: 'Poppins,sans-serif', boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                     <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#081f4e' }}>
-                        <i className="fas fa-paper-plane" style={{ marginRight: 9, color: 'var(--red,#e53e3e)' }} />
+                        <i className="fas fa-paper-plane" style={{ marginRight: 9, color: '#e53e3e' }} />
                         {isResubmit ? 'Replace Submission' : 'Submit Your Work'}
                     </h2>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#94a3b8' }}><i className="fas fa-times" /></button>
                 </div>
-
                 <p style={{ margin: '0 0 16px', fontSize: '.82rem', color: '#6b7280' }}>
                     <strong>{assessment.title}</strong>
                     {isResubmit && (
@@ -82,13 +123,12 @@ function SubmitModal({ assessment, token, onClose, onSaved }) {
                         </span>
                     )}
                 </p>
-
                 <div
                     onClick={() => inputRef.current?.click()}
                     onDragOver={e => { e.preventDefault(); setDrag(true); }}
                     onDragLeave={() => setDrag(false)}
                     onDrop={e => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
-                    style={{ border: `2px dashed ${dragOver ? 'var(--navy,#081f4e)' : '#d1d5db'}`, borderRadius: 12, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#f0f4ff' : '#fafafa', transition: 'all .2s', marginBottom: 14 }}
+                    style={{ border: `2px dashed ${dragOver ? '#081f4e' : '#d1d5db'}`, borderRadius: 12, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#f0f4ff' : '#fafafa', transition: 'all .2s', marginBottom: 14 }}
                 >
                     <i className="fas fa-cloud-upload-alt" style={{ fontSize: '2.2rem', color: '#94a3b8', marginBottom: 10, display: 'block' }} />
                     {file
@@ -100,12 +140,10 @@ function SubmitModal({ assessment, token, onClose, onSaved }) {
                     }
                     <input ref={inputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" style={{ display: 'none' }} onChange={e => pick(e.target.files[0])} />
                 </div>
-
                 {error && <p style={{ color: '#dc2626', fontSize: '.78rem', margin: '0 0 12px' }}>{error}</p>}
-
                 <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 600, fontSize: '.82rem', color: '#374151' }}>Cancel</button>
-                    <button onClick={handleSubmit} disabled={!file || uploading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: 'var(--navy,#081f4e)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', opacity: (!file || uploading) ? .5 : 1 }}>
+                    <button onClick={handleSubmit} disabled={!file || uploading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontWeight: 700, fontSize: '.82rem', opacity: (!file || uploading) ? .5 : 1 }}>
                         {uploading ? 'Uploading…' : (isResubmit ? 'Replace' : 'Submit')}
                     </button>
                 </div>
@@ -114,16 +152,9 @@ function SubmitModal({ assessment, token, onClose, onSaved }) {
     );
 }
 
-/* ── Assessment table row ────────────────────────────────────────────────── */
-function AssessmentRow({ assessment, token, onUpdated }) {
-    const [submitModal, setSubmit]  = useState(false);
-    const [toast, setToast]         = useState(null);
-    const [expanded, setExpanded]   = useState(false);
-
-    const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 3500);
-    };
+/* ── Single assessment row (no module/avg cells — rendered by parent) ─────── */
+function AssessmentRow({ assessment, token, onUpdated, showToast }) {
+    const [submitModal, setSubmit] = useState(false);
 
     const sub   = assessment.my_submission;
     const subSt = sub ? (SUB_STATUS[sub.status] || SUB_STATUS.pending) : SUB_STATUS.pending;
@@ -134,8 +165,8 @@ function AssessmentRow({ assessment, token, onUpdated }) {
             headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
         });
         if (!res.ok) { showToast('Download failed.', 'error'); return; }
-        const blob = await res.blob();
-        const cd   = res.headers.get('Content-Disposition') || '';
+        const blob  = await res.blob();
+        const cd    = res.headers.get('Content-Disposition') || '';
         const match = cd.match(/filename="?([^"]+)"?/);
         const name  = match ? match[1] : assessment.assessment_file_name || 'assessment';
         const url   = URL.createObjectURL(blob);
@@ -149,8 +180,8 @@ function AssessmentRow({ assessment, token, onUpdated }) {
             headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
         });
         if (!res.ok) { showToast('Download failed.', 'error'); return; }
-        const blob = await res.blob();
-        const cd   = res.headers.get('Content-Disposition') || '';
+        const blob  = await res.blob();
+        const cd    = res.headers.get('Content-Disposition') || '';
         const match = cd.match(/filename="?([^"]+)"?/);
         const name  = match ? match[1] : sub?.marked_file_name || 'marked';
         const url   = URL.createObjectURL(blob);
@@ -179,110 +210,94 @@ function AssessmentRow({ assessment, token, onUpdated }) {
     const isPastDue = assessment.due_date && new Date(assessment.due_date) < new Date();
     const canSubmit = assessment.status === 'active' && !isPastDue;
 
-    const tdStyle = {
-        padding: '12px 14px',
-        borderBottom: '1px solid #f1f5f9',
-        verticalAlign: 'middle',
-        fontFamily: 'Poppins,sans-serif',
-        fontSize: '.8rem',
+    const td = {
+        padding: '10px 14px',
+        borderBottom: '1px solid #e5e7eb',
+        fontSize: '.78rem',
         color: '#374151',
+        fontFamily: 'Poppins,sans-serif',
+        verticalAlign: 'middle',
     };
+
+    /* Score cell */
+    let scoreCell;
+    if (sub?.status === 'graded' && sub.grade) {
+        const pct = parseScorePercent(sub.grade);
+        const color = pct === null ? '#374151' : pct >= 75 ? '#065f46' : pct >= 50 ? '#92400e' : '#991b1b';
+        scoreCell = <span style={{ fontWeight: 700, color, fontSize: '.82rem' }}>{sub.grade}</span>;
+    } else if (sub?.status === 'submitted') {
+        scoreCell = (
+            <span style={{ background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 9px', fontSize: '.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                <i className="fas fa-paper-plane" style={{ marginRight: 4 }} />Submitted
+            </span>
+        );
+    } else {
+        scoreCell = <span style={{ color: '#d1d5db' }}>—</span>;
+    }
 
     return (
         <>
-            <Toast toast={toast} />
-            <tr style={{ background: expanded ? '#f8fafc' : '#fff', transition: 'background .15s' }}
-                onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = '#fafafa'; }}
-                onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = '#fff'; }}>
+            <tr style={{ background: '#fff' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
 
-                {/* Title + class */}
-                <td style={{ ...tdStyle, maxWidth: 220 }}>
-                    <div style={{ fontWeight: 700, color: '#111827', fontSize: '.83rem', marginBottom: 2 }}>{assessment.title}</div>
-                    {assessment.school_class && (
-                        <div style={{ fontSize: '.72rem', color: '#6b7280' }}>
-                            <i className="fas fa-chalkboard" style={{ marginRight: 4 }} />{assessment.school_class.name}
-                        </div>
-                    )}
-                    {assessment.description && (
-                        <div style={{ fontSize: '.72rem', color: '#9ca3af', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
-                            {assessment.description}
-                        </div>
-                    )}
-                </td>
-
-                {/* Status badge */}
-                <td style={{ ...tdStyle, textAlign: 'center' }}>
-                    <span style={{ background: asSt.bg, color: asSt.color, borderRadius: 20, padding: '3px 10px', fontSize: '.68rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        {asSt.label}
-                    </span>
-                </td>
-
-                {/* Due date */}
-                <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                    {assessment.due_date ? (
-                        <span style={{ color: isPastDue ? '#dc2626' : '#374151', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                            <i className={`fas ${isPastDue ? 'fa-exclamation-circle' : 'fa-calendar-alt'}`} style={{ fontSize: '.72rem' }} />
-                            {new Date(assessment.due_date).toLocaleDateString()}
-                            <span style={{ display: 'block', fontSize: '.68rem', color: isPastDue ? '#dc2626' : '#9ca3af' }}>
-                                {new Date(assessment.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {/* Assessment name */}
+                <td style={td}>
+                    <div style={{ fontWeight: 600, color: '#111827', marginBottom: 3 }}>{assessment.title}</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ background: asSt.bg, color: asSt.color, borderRadius: 20, padding: '2px 8px', fontSize: '.65rem', fontWeight: 700 }}>{asSt.label}</span>
+                        {assessment.due_date && (
+                            <span style={{ color: isPastDue ? '#dc2626' : '#6b7280', fontSize: '.67rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                <i className={`fas ${isPastDue ? 'fa-exclamation-circle' : 'fa-calendar-alt'}`} />
+                                {new Date(assessment.due_date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
                             </span>
-                        </span>
-                    ) : <span style={{ color: '#d1d5db' }}>—</span>}
-                </td>
-
-                {/* Submission status */}
-                <td style={{ ...tdStyle, textAlign: 'center' }}>
-                    <span style={{ background: subSt.bg, color: subSt.color, borderRadius: 20, padding: '3px 10px', fontSize: '.68rem', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <i className={`fas ${subSt.icon}`} style={{ fontSize: '.65rem' }} />{subSt.label}
-                    </span>
+                        )}
+                    </div>
                     {sub?.submission_file_name && (
-                        <div style={{ fontSize: '.67rem', color: '#9ca3af', marginTop: 3 }}>
+                        <div style={{ marginTop: 4, fontSize: '.67rem', color: '#9ca3af' }}>
                             <i className="fas fa-file" style={{ marginRight: 3 }} />{sub.submission_file_name}
+                            {sub.submitted_at && <span style={{ marginLeft: 6 }}>· {new Date(sub.submitted_at).toLocaleDateString()}</span>}
                         </div>
                     )}
                 </td>
 
-                {/* Grade */}
-                <td style={{ ...tdStyle, textAlign: 'center' }}>
-                    {sub?.status === 'graded' ? (
-                        <div>
-                            <span style={{ fontWeight: 700, color: '#065f46', fontSize: '.85rem' }}>{sub.grade || '—'}</span>
-                            {sub.feedback && (
-                                <div style={{ fontSize: '.67rem', color: '#6b7280', marginTop: 2, maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                     title={sub.feedback}>
-                                    {sub.feedback}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <span style={{ color: '#d1d5db', fontSize: '.8rem' }}>—</span>
-                    )}
+                {/* Score */}
+                <td style={{ ...td, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{scoreCell}</td>
+
+                {/* Comment / Feedback */}
+                <td style={{ ...td, maxWidth: 200 }}>
+                    {sub?.status === 'graded' && sub.feedback
+                        ? <span style={{ color: '#374151' }}>{sub.feedback}</span>
+                        : sub?.status === 'graded'
+                            ? <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>No feedback</span>
+                            : <span style={{ color: '#d1d5db' }}>—</span>
+                    }
                 </td>
 
                 {/* Actions */}
-                <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                         {assessment.assessment_file_path && (
                             <button onClick={downloadAssessment} title="Download Assessment"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1.5px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1.5px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
                                 <i className="fas fa-download" />Download
                             </button>
                         )}
                         {canSubmit && (
                             <button onClick={() => setSubmit(true)} title={sub?.submission_file_path ? 'Re-submit' : 'Submit Work'}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: 'none', background: 'var(--navy,#081f4e)', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 700 }}>
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: 'none', background: '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 700 }}>
                                 <i className="fas fa-paper-plane" />{sub?.submission_file_path ? 'Re-submit' : 'Submit'}
                             </button>
                         )}
                         {sub?.marked_file_path && (
                             <button onClick={downloadMarked} title="Download Marked Work"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1.5px solid #10b981', background: '#ecfdf5', color: '#065f46', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
-                                <i className="fas fa-file-download" />Marked Work
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1.5px solid #10b981', background: '#ecfdf5', color: '#065f46', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
+                                <i className="fas fa-file-download" />Marked
                             </button>
                         )}
                         {sub?.submission_file_path && canSubmit && sub.status !== 'graded' && (
                             <button onClick={removeSubmission} title="Remove Submission"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.73rem', fontWeight: 600 }}>
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 8px', borderRadius: 7, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
                                 <i className="fas fa-times" />Remove
                             </button>
                         )}
@@ -302,49 +317,9 @@ function AssessmentRow({ assessment, token, onUpdated }) {
     );
 }
 
-/* ── Assessment table ────────────────────────────────────────────────────── */
-function AssessmentTable({ assessments, token, onUpdated }) {
-    const thStyle = {
-        padding: '10px 14px',
-        textAlign: 'left',
-        fontSize: '.72rem',
-        fontWeight: 700,
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: '.4px',
-        borderBottom: '2px solid #e5e7eb',
-        background: '#f8fafc',
-        fontFamily: 'Poppins,sans-serif',
-        whiteSpace: 'nowrap',
-    };
-
-    return (
-        <div style={{ overflowX: 'auto', borderRadius: 12, border: '1.5px solid #e5e7eb', boxShadow: '0 2px 10px rgba(0,0,0,.05)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-                <thead>
-                    <tr>
-                        <th style={thStyle}>Assessment</th>
-                        <th style={{ ...thStyle, textAlign: 'center' }}>Status</th>
-                        <th style={thStyle}>Due Date</th>
-                        <th style={{ ...thStyle, textAlign: 'center' }}>Submission</th>
-                        <th style={{ ...thStyle, textAlign: 'center' }}>Grade</th>
-                        <th style={thStyle}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {assessments.map(a => (
-                        <AssessmentRow key={a.id} assessment={a} token={token} onUpdated={onUpdated} />
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
 /* ── Main page ─────────────────────────────────────────────────────────────── */
 export default function StudentAssessments() {
     const { token } = useAuth();
-
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [toast, setToast]             = useState(null);
@@ -371,21 +346,79 @@ export default function StudentAssessments() {
         setAssessments(prev => prev.map(a => a.id === updated.id ? updated : a));
     };
 
-    const active = assessments.filter(a => a.status === 'active');
-    const closed = assessments.filter(a => a.status !== 'active');
+    const cumulative  = cumulativeAverage(assessments);
+    const groups      = groupByModule(assessments);
+
+    /* shared styles */
+    const thBase = {
+        padding: '11px 14px',
+        fontFamily: 'Poppins,sans-serif',
+        fontSize: '.73rem',
+        fontWeight: 700,
+        color: '#fff',
+        background: '#081f4e',
+        borderRight: '1px solid rgba(255,255,255,.12)',
+        whiteSpace: 'nowrap',
+    };
+
+    const moduleAvgTd = (avg) => ({
+        padding: '10px 14px',
+        fontFamily: 'Poppins,sans-serif',
+        fontSize: '.78rem',
+        fontWeight: 700,
+        color: avg ? (parseFloat(avg) >= 75 ? '#065f46' : parseFloat(avg) >= 50 ? '#92400e' : '#991b1b') : '#9ca3af',
+        background: '#f8fafc',
+        borderBottom: '1px solid #e5e7eb',
+        textAlign: 'center',
+        verticalAlign: 'middle',
+    });
+
+    const moduleTd = {
+        padding: '10px 14px',
+        fontFamily: 'Poppins,sans-serif',
+        fontSize: '.78rem',
+        fontWeight: 700,
+        color: '#081f4e',
+        background: '#f0f4ff',
+        borderBottom: '1px solid #e5e7eb',
+        borderRight: '2px solid #081f4e',
+        verticalAlign: 'middle',
+        textAlign: 'center',
+    };
+
+    const numTd = {
+        padding: '10px 14px',
+        fontFamily: 'Poppins,sans-serif',
+        fontSize: '.78rem',
+        fontWeight: 700,
+        color: '#fff',
+        background: '#081f4e',
+        borderBottom: '1px solid rgba(255,255,255,.15)',
+        textAlign: 'center',
+        verticalAlign: 'middle',
+    };
 
     return (
         <div style={{ fontFamily: 'Poppins,sans-serif', maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
             <Toast toast={toast} />
 
-            <div style={{ marginBottom: 28 }}>
-                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
-                    <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: 'var(--red,#e53e3e)' }} />
-                    My Assessments
-                </h2>
-                <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
-                    Download your assignments, submit your work, and view your graded results here.
-                </p>
+            {/* Page header */}
+            <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                    <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#081f4e' }}>
+                        <i className="fas fa-clipboard-list" style={{ marginRight: 10, color: '#e53e3e' }} />
+                        My Assessments
+                    </h2>
+                    <p style={{ margin: '6px 0 0', fontSize: '.82rem', color: '#6b7280' }}>
+                        Download your assignments, submit your work, and view your graded results here.
+                    </p>
+                </div>
+                {cumulative && (
+                    <div style={{ background: '#081f4e', color: '#fff', borderRadius: 10, padding: '10px 20px', textAlign: 'center', flexShrink: 0 }}>
+                        <div style={{ fontSize: '.68rem', fontWeight: 600, opacity: .7, letterSpacing: '.5px', textTransform: 'uppercase' }}>Cumulative Score</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: 2 }}>{cumulative}</div>
+                    </div>
+                )}
             </div>
 
             {loading ? (
@@ -400,26 +433,207 @@ export default function StudentAssessments() {
                     <p style={{ margin: '6px 0 0', color: '#9ca3af', fontSize: '.8rem' }}>Check back later or contact your teacher.</p>
                 </div>
             ) : (
-                <>
-                    {active.length > 0 && (
-                        <section style={{ marginBottom: 36 }}>
-                            <h3 style={{ margin: '0 0 12px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <i className="fas fa-circle" style={{ fontSize: '.5rem', color: '#10b981' }} />Active Assessments
-                            </h3>
-                            <AssessmentTable assessments={active} token={token} onUpdated={handleUpdated} />
-                        </section>
-                    )}
+                <div style={{ overflowX: 'auto', borderRadius: 12, border: '1.5px solid #e5e7eb', boxShadow: '0 2px 12px rgba(0,0,0,.07)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+                        <thead>
+                            <tr>
+                                <th style={{ ...thBase, width: 36, textAlign: 'center' }}>#</th>
+                                <th style={{ ...thBase, minWidth: 160 }}>Module</th>
+                                <th style={{ ...thBase, minWidth: 220 }}>Assessment</th>
+                                <th style={{ ...thBase, width: 100, textAlign: 'center' }}>Score (100%)</th>
+                                <th style={{ ...thBase, minWidth: 180 }}>Comment</th>
+                                <th style={{ ...thBase, width: 110, textAlign: 'center', background: '#0f2d6b', borderRight: 'none' }}>Module Avg Score (100%)</th>
+                                <th style={{ ...thBase, minWidth: 180, background: '#0f2d6b', borderRight: 'none' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {groups.map((group, gi) => {
+                                const avg      = moduleAverage(group.items);
+                                const rowCount = group.items.length;
+                                return group.items.map((assessment, ai) => {
+                                    const isFirst = ai === 0;
+                                    return (
+                                        <tr key={assessment.id}
+                                            style={{ background: '#fff' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
 
-                    {closed.length > 0 && (
-                        <section>
-                            <h3 style={{ margin: '0 0 12px', fontSize: '.85rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <i className="fas fa-circle" style={{ fontSize: '.5rem', color: '#94a3b8' }} />Closed / Past Assessments
-                            </h3>
-                            <AssessmentTable assessments={closed} token={token} onUpdated={handleUpdated} />
-                        </section>
-                    )}
-                </>
+                                            {/* # — only first row of module */}
+                                            {isFirst && (
+                                                <td rowSpan={rowCount} style={{ ...numTd }}>
+                                                    {gi + 1}
+                                                </td>
+                                            )}
+
+                                            {/* Module name — only first row */}
+                                            {isFirst && (
+                                                <td rowSpan={rowCount} style={moduleTd}>
+                                                    {group.module?.title ?? 'General'}
+                                                </td>
+                                            )}
+
+                                            {/* Assessment row content */}
+                                            <AssessmentRowCells
+                                                assessment={assessment}
+                                                token={token}
+                                                onUpdated={handleUpdated}
+                                                showToast={showToast}
+                                            />
+
+                                            {/* Module avg — only first row */}
+                                            {isFirst && (
+                                                <td rowSpan={rowCount} style={moduleAvgTd(avg)}>
+                                                    {avg ?? <span style={{ color: '#d1d5db' }}>—</span>}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                });
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
+    );
+}
+
+/* ── Inline row cells (used inside the main tr, alongside rowspan cells) ── */
+function AssessmentRowCells({ assessment, token, onUpdated, showToast }) {
+    const [submitModal, setSubmit] = useState(false);
+
+    const sub      = assessment.my_submission;
+    const asSt     = ASSESS_STATUS[assessment.status] || ASSESS_STATUS.active;
+    const isPastDue = assessment.due_date && new Date(assessment.due_date) < new Date();
+    const canSubmit = assessment.status === 'active' && !isPastDue;
+
+    const download = async (url, fallback) => {
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: '*/*' } });
+        if (!res.ok) { showToast('Download failed.', 'error'); return; }
+        const blob  = await res.blob();
+        const cd    = res.headers.get('Content-Disposition') || '';
+        const match = cd.match(/filename="?([^"]+)"?/);
+        const name  = match ? match[1] : fallback;
+        const a     = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = name; a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
+    const removeSubmission = async () => {
+        if (!confirm('Remove your submission? You can re-submit if the assessment is still active.')) return;
+        const res = await fetch(`/api/student/class-assessments/${assessment.id}/submission`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        });
+        if (!res.ok) { showToast('Failed to remove submission.', 'error'); return; }
+        onUpdated({ ...assessment, my_submission: null });
+        showToast('Submission removed.');
+    };
+
+    const handleSubmitSaved = (submission) => {
+        setSubmit(false);
+        onUpdated({ ...assessment, my_submission: submission });
+        showToast('Work submitted successfully!');
+    };
+
+    const td = {
+        padding: '10px 14px',
+        borderBottom: '1px solid #e5e7eb',
+        fontSize: '.78rem',
+        color: '#374151',
+        fontFamily: 'Poppins,sans-serif',
+        verticalAlign: 'middle',
+    };
+
+    /* score display */
+    let scoreNode;
+    if (sub?.status === 'graded' && sub.grade) {
+        const pct   = parseScorePercent(sub.grade);
+        const color = pct === null ? '#374151' : pct >= 75 ? '#065f46' : pct >= 50 ? '#92400e' : '#991b1b';
+        scoreNode = <span style={{ fontWeight: 700, color, fontSize: '.85rem' }}>{sub.grade}</span>;
+    } else if (sub?.status === 'submitted') {
+        scoreNode = (
+            <span style={{ background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 9px', fontSize: '.67rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                <i className="fas fa-paper-plane" style={{ marginRight: 4 }} />Submitted
+            </span>
+        );
+    } else {
+        scoreNode = <span style={{ color: '#d1d5db' }}>—</span>;
+    }
+
+    return (
+        <>
+            {/* Assessment name cell */}
+            <td style={td}>
+                <div style={{ fontWeight: 600, color: '#111827', marginBottom: 4 }}>{assessment.title}</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ background: asSt.bg, color: asSt.color, borderRadius: 20, padding: '2px 8px', fontSize: '.65rem', fontWeight: 700 }}>{asSt.label}</span>
+                    {assessment.due_date && (
+                        <span style={{ color: isPastDue ? '#dc2626' : '#6b7280', fontSize: '.67rem', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <i className={`fas ${isPastDue ? 'fa-exclamation-circle' : 'fa-calendar-alt'}`} />
+                            Due {new Date(assessment.due_date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                    )}
+                </div>
+                {sub?.submission_file_name && (
+                    <div style={{ marginTop: 4, fontSize: '.67rem', color: '#9ca3af' }}>
+                        <i className="fas fa-file" style={{ marginRight: 3 }} />{sub.submission_file_name}
+                        {sub.submitted_at && <span style={{ marginLeft: 5 }}>· {new Date(sub.submitted_at).toLocaleDateString()}</span>}
+                    </div>
+                )}
+            </td>
+
+            {/* Score cell */}
+            <td style={{ ...td, textAlign: 'center' }}>{scoreNode}</td>
+
+            {/* Comment / Feedback cell */}
+            <td style={{ ...td }}>
+                {sub?.status === 'graded' && sub.feedback
+                    ? sub.feedback
+                    : sub?.status === 'graded'
+                        ? <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>No feedback</span>
+                        : <span style={{ color: '#d1d5db' }}>—</span>
+                }
+            </td>
+
+            {/* Actions cell */}
+            <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    {assessment.assessment_file_path && (
+                        <button onClick={() => download(`/api/student/class-assessments/${assessment.id}/download`, assessment.assessment_file_name || 'assessment')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1.5px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
+                            <i className="fas fa-download" />Download
+                        </button>
+                    )}
+                    {canSubmit && (
+                        <button onClick={() => setSubmit(true)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: 'none', background: '#081f4e', color: '#fff', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 700 }}>
+                            <i className="fas fa-paper-plane" />{sub?.submission_file_path ? 'Re-submit' : 'Submit'}
+                        </button>
+                    )}
+                    {sub?.marked_file_path && (
+                        <button onClick={() => download(`/api/student/class-assessments/${assessment.id}/download-marked`, sub?.marked_file_name || 'marked')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1.5px solid #10b981', background: '#ecfdf5', color: '#065f46', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
+                            <i className="fas fa-file-download" />Marked
+                        </button>
+                    )}
+                    {sub?.submission_file_path && canSubmit && sub.status !== 'graded' && (
+                        <button onClick={removeSubmission}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 8px', borderRadius: 7, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: '.72rem', fontWeight: 600 }}>
+                            <i className="fas fa-times" />Remove
+                        </button>
+                    )}
+                </div>
+            </td>
+
+            {submitModal && (
+                <SubmitModal
+                    assessment={assessment}
+                    token={token}
+                    onClose={() => setSubmit(false)}
+                    onSaved={handleSubmitSaved}
+                />
+            )}
+        </>
     );
 }
